@@ -5,6 +5,7 @@ import * as React from 'react';
 import { GitSyncService } from '../service/service';
 import { Toolbar } from './toolbar';
 import { GitSetup } from './setup';
+// import { SetViewButton } from './dev';
 
 import { panel } from '../style/panel';
 

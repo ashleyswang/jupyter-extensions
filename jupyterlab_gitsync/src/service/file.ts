@@ -52,6 +52,10 @@ export class File implements IFile {
     return this._dirtyState;
   }
 
+  get path() {
+    return this.widget.context.path;
+  }
+
   async save() {
     try{
       await this.context.save();

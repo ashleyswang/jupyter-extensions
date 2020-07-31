@@ -15,7 +15,6 @@ const fs = new ContentsManager();
 export class File implements IFile {
   widget: DocumentWidget;
   context: DocumentRegistry.Context;
-
   editor: CodeMirror;
   doc: CodeMirror.doc;
   resolver: MergeResolver;
@@ -51,6 +50,10 @@ export class File implements IFile {
 
   get dirtyState(): ISignal<this, boolean> {
     return this._dirtyState;
+  }
+
+  get path() {
+    return this.widget.context.path;
   }
 
   async save() {
@@ -148,4 +151,5 @@ export class File implements IFile {
       .model as DocumentModel).stateChanged, this._dirtyStateListener);
     this._addListener(this.widget.disposed, this._disposedListener);
   }
+
 }

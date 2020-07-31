@@ -1,7 +1,12 @@
 import { ILabShell } from '@jupyterlab/application';
 import { ISignal, Signal } from '@lumino/signaling';
+<<<<<<< HEAD
 import { IDocumentWidget, DocumentWidget, DocumentRegistry } from '@jupyterlab/docregistry';
 import { NotebookPanel } from '@jupyterlab/notebook';
+=======
+import { IDocumentWidget } from '@jupyterlab/docregistry';
+import { ILabShell } from '@jupyterlab/application';
+>>>>>>> add dynamic file path for renaming & fix bugs on scroll view update
 
 import { File } from './file';
 import { NotebookFile } from './notebook_file';
@@ -32,7 +37,6 @@ export class FileTracker {
   private _reloadCompleted: Signal<this, void> = new Signal<this, void>(this);
   private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _dirtyState: Signal<this, boolean> = new Signal<this, boolean>(this);
-
 
   constructor(shell: ILabShell) {
     this.shell = shell;

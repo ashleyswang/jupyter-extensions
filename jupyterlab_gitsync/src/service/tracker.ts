@@ -144,7 +144,16 @@ export class FileTracker {
     }
   }
 
-  private _dirtyStateListener(sender: DocumentModel, args: any){
-    console.log(sender, args);
+  private _dirtyStateListener(sender: File, dirty: boolean){
+    if (!dirty){
+      const i = this.changed.indexOf(sender);
+      this.changed.splice(i, 1);
+      if (this.changed.length == 0){
+        this._updateState('dirty', false);
+      }
+    } else {
+      this.changed.push(sender);
+      this._updateState('dirty', true);
+    }
   }
 }

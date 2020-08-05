@@ -1,8 +1,7 @@
 import { DocumentWidget, DocumentRegistry, DocumentModel } from '@jupyterlab/docregistry';
-import { Contents } from '@jupyterlab/services'
 import { ISignal, Signal } from '@lumino/signaling';
 
-import { ContentsManager } from '@jupyterlab/services';
+import { ContentsManager, Contents } from '@jupyterlab/services';
 import { FileEditor } from '@jupyterlab/fileeditor';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { CodeMirror } from 'codemirror';
@@ -15,6 +14,7 @@ const fs = new ContentsManager();
 export class File implements IFile {
   widget: DocumentWidget;
   context: DocumentRegistry.Context;
+
   editor: CodeMirror;
   doc: CodeMirror.doc;
   resolver: MergeResolver;
@@ -52,8 +52,16 @@ export class File implements IFile {
     return this._dirtyState;
   }
 
-  get path() {
+  get path(): string {
     return this.widget.context.path;
+  }
+
+  get conflictState(): ISignal<this, boolean> {
+    return this._conflictState;
+  }
+
+  get dirtyState(): ISignal<this, boolean> {
+    return this._dirtyState;
   }
 
   async save() {

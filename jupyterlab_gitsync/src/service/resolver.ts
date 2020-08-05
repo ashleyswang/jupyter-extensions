@@ -32,8 +32,8 @@ export class MergeResolver {
     local_tok: undefined,
   };
 
-  private _resolved: boolean;
-  private _stateChange: Signal<this, boolean> = new Signal<this, boolean>(this);
+  private _conflict: boolean;
+  private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
 
   constructor(file: File) {
     this._file = file;
@@ -51,16 +51,16 @@ export class MergeResolver {
     return this._cursor;
   }
 
-  get resolved() {
-    return this._resolved;
+  get conflict() {
+    return this._conflict;
   }
 
   get versions() {
     return this._versions;
   }
 
-  get stateChange(): ISignal<this, boolean> {
-    return this._stateChange;
+  get conflictState(): ISignal<this, boolean> {
+    return this._conflictState;
   }
 
   setCursorToken(pos: CodeMirror.Pos) {
@@ -105,7 +105,7 @@ export class MergeResolver {
       text = this._removeCursorToken(text);
       this.addVersion(text, 'base');
     }
-    this._updateState(true);
+    this._updateState(false);
     return this._versions.base;
   }
 
@@ -155,13 +155,10 @@ export class MergeResolver {
     return ret;
   }
 
-  private _updateState(state?: boolean){
-    if (state === null || state === undefined){
-      this._resolved = !this.resolved;
-      this._stateChange.emit(this.resolved);
-    } else if (state != this.resolved){
-      this._resolved = state;
-      this._stateChange.emit(this.resolved);
+  private _updateState(state: boolean){
+    if (state != this.conflict){
+      this._conflict = state;
+      this._conflictState.emit(state);
     }
   }
 
@@ -191,7 +188,7 @@ export class MergeResolver {
         // TO DO (ashleyswang) : open an editor for 3 way merging
       }
       if (result.button.label === 'Ignore') {
-        this._updateState(false);
+        this._updateState(true);
         throw new Error('ConflictError: Unresolved conflicts in repository. Stopping sync procedure.');
       }
     });

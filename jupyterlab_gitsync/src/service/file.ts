@@ -1,19 +1,22 @@
-import { IDocumentWidget, DocumentRegistry } from '@jupyterlab/docregistry';
+import { DocumentWidget, DocumentRegistry, DocumentModel } from '@jupyterlab/docregistry';
+import { ISignal, Signal } from '@lumino/signaling';
+
 import { ContentsManager } from '@jupyterlab/services';
 import { FileEditor } from '@jupyterlab/fileeditor';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { CodeMirror } from 'codemirror';
 
+import { IFile } from './tracker';
 import { MergeResolver } from './resolver';
 
 const fs = new ContentsManager();
 
-export class File {
-  widget: IDocumentWidget;
+export class File implements IFile {
+  widget: DocumentWidget;
   context: DocumentRegistry.Context;
+
   editor: CodeMirror;
   doc: CodeMirror.doc;
-
   resolver: MergeResolver;
   view: { 
     left: number,
@@ -22,7 +25,10 @@ export class File {
     bottom: number 
   }
 
-  constructor(widget: IDocumentWidget) {
+  private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
+  private _dirtyState: Signal<this, boolean> = new Signal<this, boolean>(this);
+
+  constructor(widget: DocumentWidget) {
     this.widget = widget;
     this.context = widget.context;
     this.editor = ((widget.content as FileEditor)
@@ -31,10 +37,19 @@ export class File {
     this.resolver = new MergeResolver(this);
 
     this._getInitVersion();
+    this._addListeners();
   }
 
-  get path() {
+  get path(): string {
     return this.widget.context.path;
+  }
+
+  get conflictState(): ISignal<this, boolean> {
+    return this._conflictState;
+  }
+
+  get dirtyState(): ISignal<this, boolean> {
+    return this._dirtyState;
   }
 
   async save() {
@@ -43,7 +58,6 @@ export class File {
     } catch (error) {
       console.warn(error);
     }
-    
   }
 
   async reload() {
@@ -97,4 +111,32 @@ export class File {
     this.editor.scrollIntoView(this.view);
   }
 
+  private _addListener(signal: ISignal<any, any>, callback: any){
+    return signal.connect(callback, this);
+  }
+
+  private _removeListener(signal: ISignal<any, any>, callback: any){
+    return signal.disconnect(callback, this);
+  }
+
+  private _disposedListener(){
+    this._removeListener(this.resolver.conflictState, this._conflictListener);
+    this._removeListener(((this.widget.content as FileEditor)
+      .model as DocumentModel).stateChanged, this._dirtyStateListener);
+  }
+  
+  private _conflictListener(sender: MergeResolver, conflict: boolean){
+    this._conflictState.emit(conflict);
+  }
+
+  private _dirtyStateListener(sender: DocumentModel, value: any){
+    if (value.name === 'dirty'){ this._dirtyState.emit(value.newValue); }
+  }
+
+  private _addListeners() {
+    this._addListener(this.resolver.conflictState, this._conflictListener);
+    this._addListener(((this.widget.content as FileEditor)
+      .model as DocumentModel).stateChanged, this._dirtyStateListener);
+    this._addListener(this.widget.disposed, this._disposedListener);
+  }
 }

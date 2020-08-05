@@ -23,7 +23,7 @@ async function activate(
 ) {
   const path = './jupyterlab_gitsync/TEST';
   const git = new GitManager(path);
-  const files = new FileTracker(editor, shell);
+  const files = new FileTracker(shell);
   const service = new GitSyncService(git, files);
 
   const widget = new GitSyncWidget(service);

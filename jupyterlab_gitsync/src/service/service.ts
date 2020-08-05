@@ -89,15 +89,21 @@ export class GitSyncService {
     }
   }
 
+  private _addListener(signal: ISignal<any, any>, callback: any){
+    return signal.connect(callback, this);
+  }
+
+  private _conflictListener(sender: FileTracker, conflict: boolean){
+    if (!conflict && !this.running){
+      this._blocked = false;
+      this.start();
+    } else if (conflict && this.running){
+      this.stop();
+      this._blocked = true;
+    }
+  }
+
   private _addListeners(): void {
-    this.tracker.stateChange.connect((tracker, resolved) => {
-      if (resolved && !this.running){
-        this._blocked = false;
-        this.start();
-      } else if (!resolved && this.running){
-        this.stop();
-        this._blocked = true;
-      }
-    }, this);
+    this._addListener(this.tracker.conflictState, this._conflictListener);
   }
 }

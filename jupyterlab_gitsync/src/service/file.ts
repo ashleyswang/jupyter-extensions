@@ -1,4 +1,5 @@
 import { DocumentWidget, DocumentRegistry, DocumentModel } from '@jupyterlab/docregistry';
+import { Contents } from '@jupyterlab/services'
 import { ISignal, Signal } from '@lumino/signaling';
 
 import { ContentsManager } from '@jupyterlab/services';
@@ -65,11 +66,19 @@ export class File implements IFile {
     this._getLocalVersion();
     this._getEditorView();
     const text = await this.resolver.mergeVersions();
-    if (text) {
-      await this.context.revert();
-      this.doc.setValue(text);
-      this._setEditorView();
+    if (text) { await this._displayText(text); }
+  }
+
+  private async _displayText(text: string) {
+    const options = {
+      content: text,
+      format: 'text' as Contents.FileFormat,
+      path: this.path,
+      type: 'file' as Contents.ContentType,
     }
+    await fs.save(this.path, options);
+    await this.context.revert();
+    this._setEditorView();
   }
 
   private async _getInitVersion() {

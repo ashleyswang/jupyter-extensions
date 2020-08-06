@@ -43,6 +43,7 @@ export class NotebookFile implements IFile {
   }
 
   async reload() {
+    this._getLocalVersion();
     this._getRemoteVersion();
     await this.context.revert();
   }
@@ -52,17 +53,24 @@ export class NotebookFile implements IFile {
     console.log(contents.content);
   }
 
+  private async _getLocalVersion() {
+    const value = ((this.widget.content as Notebook).model as NotebookModel).value;
+    console.log('value', value);
+    const cells = ((this.widget.content as Notebook).model as NotebookModel).cells;
+    console.log('cells', cells);
+  }
+
   private _addListener(signal: ISignal<any, any>, callback: any){
     return signal.connect(callback, this);
   }
 
-  private _removeListener(signal: ISignal<any, any>, callback: any){
-    return signal.disconnect(callback, this);
-  }
+  // private _removeListener(signal: ISignal<any, any>, callback: any){
+  //   return signal.disconnect(callback, this);
+  // }
 
   private _disposedListener(){
-    this._removeListener(((this.widget.content as Notebook)
-      .model as NotebookModel).stateChanged, this._dirtyStateListener);
+    // this._removeListener(((this.widget.content as Notebook)
+    //   .model as NotebookModel).stateChanged, this._dirtyStateListener);
   }
   
 

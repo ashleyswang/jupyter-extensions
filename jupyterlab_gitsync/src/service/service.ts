@@ -17,6 +17,7 @@ export class GitSyncService {
   private _running: boolean;
   syncInterval: number = 0 * 1000;
 
+  private _status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning';
   private _blocked: boolean = false;
   private _stateChange: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _statusChange: Signal<this, string> = new Signal<this, string>(this);
@@ -60,6 +61,10 @@ export class GitSyncService {
     return this._tracker;
   }
 
+  get status(): string {
+    return this._status;
+  }
+
   get stateChange(): ISignal<this, boolean> {
     return this._stateChange;
   }
@@ -68,20 +73,27 @@ export class GitSyncService {
     return this._statusChange;
   }
 
+  private _updateStatus(status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning'){
+    if (status != this.status){
+      this._status = status;
+      this._statusChange.emit(status);
+    }
+  }
+
   private async _run(): Promise<void> {
     if (this.running && this.completed){
       this._completed = false;
       setTimeout(async () => {
         try{
           await this.tracker.saveAll();
-          this._statusChange.emit('sync');
+          this._updateStatus('sync')
           await this.git.sync();
-          this._statusChange.emit('merge');
+          this._updateStatus('merge')
           await this.tracker.reloadAll();
-          this._statusChange.emit('up-to-date');
+          this._updateStatus('up-to-date');
         } catch (error) {
           console.warn(error);
-          this._statusChange.emit('warning')
+          this._updateStatus('warning')
         }
         this._completed = true; 
         this._run();
@@ -103,7 +115,14 @@ export class GitSyncService {
     }
   }
 
+  private _dirtyStateListener(sender: FileTracker, dirty: boolean){
+    if (this.status === 'up-to-date' && dirty){
+      this._updateStatus('dirty');
+    }
+  }
+
   private _addListeners(): void {
     this._addListener(this.tracker.conflictState, this._conflictListener);
+    this._addListener(this.tracker.dirtyState, this._dirtyStateListener);
   }
 }

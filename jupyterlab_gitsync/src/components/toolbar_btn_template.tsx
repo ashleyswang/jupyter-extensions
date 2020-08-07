@@ -14,7 +14,7 @@ export interface State {
   options?: any;
 }
 
-export class ToolbarButton extends React.Component<Props, State> {
+export abstract class ToolbarButton extends React.Component<Props, State> {
   constructor(
     props: Props,
     init_label: string,

@@ -14,7 +14,11 @@ export interface State {
   options?: any;
 }
 
+<<<<<<< HEAD
 // TO DO: Change to non-inheritance implementation of React Component
+=======
+// TO DO: Don't use inheritance with React
+>>>>>>> 199893d786eb1de15c24b59b2f0bbe4b6fe1998a
 
 export abstract class ToolbarButton extends React.Component<Props, State> {
   constructor(

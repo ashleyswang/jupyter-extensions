@@ -1,7 +1,5 @@
 import { DocumentWidget, DocumentRegistry, DocumentModel } from '@jupyterlab/docregistry';
-import { Contents } from '@jupyterlab/services'
 import { ISignal, Signal } from '@lumino/signaling';
-
 import { ContentsManager, Contents } from '@jupyterlab/services';
 import { FileEditor } from '@jupyterlab/fileeditor';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
@@ -39,6 +37,7 @@ export class File implements IFile {
 
     this._getInitVersion();
     this._addListeners();
+<<<<<<< HEAD
   }
 
   get path(): string {
@@ -53,6 +52,10 @@ export class File implements IFile {
     return this._dirtyState;
   }
 
+=======
+  }
+
+>>>>>>> 199893d786eb1de15c24b59b2f0bbe4b6fe1998a
   get path(): string {
     return this.widget.context.path;
   }
@@ -160,5 +163,8 @@ export class File implements IFile {
       .model as DocumentModel).stateChanged, this._dirtyStateListener);
     this._addListener(this.widget.disposed, this._disposedListener);
   }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 199893d786eb1de15c24b59b2f0bbe4b6fe1998a
 }

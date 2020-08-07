@@ -5,7 +5,7 @@ export interface Props {
   path: string;
 }
 
-// TO DO: implement file list of conflicting files
+// TO DO: implement file list of conflicting files 
 
 export class File extends React.Component<Props> {
   /**

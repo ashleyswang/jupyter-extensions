@@ -14,6 +14,8 @@ export interface State {
   options?: any;
 }
 
+// TO DO: Don't use inheritance with React
+
 export abstract class ToolbarButton extends React.Component<Props, State> {
   constructor(
     props: Props,
@@ -58,7 +60,6 @@ export abstract class ToolbarButton extends React.Component<Props, State> {
                 this.state.style
               )}
             >
-              {' '}
             </span>
           </span>
         </button>

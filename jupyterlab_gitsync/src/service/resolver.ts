@@ -3,6 +3,7 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISignal, Signal } from '@lumino/signaling';
 import { default as merge } from 'diff3';
 
+import { IResolver } from './tracker';
 import { File } from './File';
 
 function token() {
@@ -21,7 +22,7 @@ interface Versions {
   local_tok: string;
 }
 
-export class MergeResolver {
+export class FileResolver implements IResolver {
   _file: File;
   _token: string = token();
   _cursor: CodeMirror.Pos;
@@ -39,11 +40,11 @@ export class MergeResolver {
     this._file = file;
   }
 
-  get file() {
+  get file(): File {
     return this._file;
   }
 
-  get path() {
+  get path(): string {
     return this._file.path;
   }
 
@@ -51,11 +52,11 @@ export class MergeResolver {
     return this._cursor;
   }
 
-  get conflict() {
+  get conflict(): boolean {
     return this._conflict;
   }
 
-  get versions() {
+  get versions(): Versions {
     return this._versions;
   }
 

@@ -56,6 +56,7 @@ export class GitManager {
     if (response.success) {
       return this._syncCompleted.emit();
     } else if (response.conflict) {
+      // TO DO: Add conflict handler for sync conflicts
       // this._fileConflicts = response.conflict;
       return this._mergeConflict.emit();
     } else {

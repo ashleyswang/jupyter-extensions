@@ -51,18 +51,6 @@ export class File implements IFile {
     return this._dirtyState;
   }
 
-  get path(): string {
-    return this.widget.context.path;
-  }
-
-  get conflictState(): ISignal<this, boolean> {
-    return this._conflictState;
-  }
-
-  get dirtyState(): ISignal<this, boolean> {
-    return this._dirtyState;
-  }
-
   async save() {
     try{
       await this.context.save();

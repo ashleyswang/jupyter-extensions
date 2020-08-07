@@ -130,20 +130,7 @@ export class FileTracker {
       this._updateState('conflict', true);
     }
   }
-
-  private _dirtyStateListener(sender: File, dirty: boolean){
-    if (!dirty){
-      const i = this.changed.indexOf(sender);
-      this.changed.splice(i, 1);
-      if (this.changed.length == 0){
-        this._updateState('dirty', false);
-      }
-    } else {
-      this.changed.push(sender);
-      this._updateState('dirty', true);
-    }
-  }
-
+  
   private _dirtyStateListener(sender: File, dirty: boolean){
     if (!dirty){
       const i = this.changed.indexOf(sender);

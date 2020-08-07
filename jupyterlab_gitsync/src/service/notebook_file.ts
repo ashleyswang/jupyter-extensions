@@ -69,10 +69,11 @@ export class NotebookFile implements IFile {
   // }
 
   private _disposedListener(){
+    // TO DO: add functionality to remove resources after closing document
+
     // this._removeListener(((this.widget.content as Notebook)
     //   .model as NotebookModel).stateChanged, this._dirtyStateListener);
   }
-  
 
   private _dirtyStateListener(sender: NotebookModel, value: any){
     console.log(value);

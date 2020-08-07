@@ -60,7 +60,6 @@ export abstract class ToolbarButton extends React.Component<Props, State> {
                 this.state.style
               )}
             >
-              {' '}
             </span>
           </span>
         </button>

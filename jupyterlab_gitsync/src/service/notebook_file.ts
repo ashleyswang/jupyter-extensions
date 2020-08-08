@@ -4,13 +4,19 @@ import { ISignal, Signal } from '@lumino/signaling';
 
 import { ContentsManager } from '@jupyterlab/services';
 
-import { IFile } from './tracker';
+import { IFile, IResolver } from './tracker';
+import { NotebookResolver } from './notebook_resolver';
 
 const fs = new ContentsManager();
+
+// TO DO: implement most functionality for NotebookFile
+// mostly a placeholder file with outline of needed functions
+// so compiler doesn't complain
 
 export class NotebookFile implements IFile {
   widget: NotebookPanel;
   context: DocumentRegistry.Context;
+  resolver: IResolver;
 
   private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _dirtyState: Signal<this, boolean> = new Signal<this, boolean>(this);
@@ -18,6 +24,7 @@ export class NotebookFile implements IFile {
   constructor(widget: NotebookPanel) {
     this.widget = widget;
     this.context = widget.context;
+    this.resolver = new NotebookResolver(this);
 
     this._addListeners();
   }
@@ -49,15 +56,15 @@ export class NotebookFile implements IFile {
   }
 
   private async _getRemoteVersion() {
-    const contents = await fs.get(this.path);
+    // TO DO: change to get raw string of notebook file
+    const contents = await fs.get(this.path, {content: false});
     console.log(contents.content);
   }
 
   private async _getLocalVersion() {
-    const value = ((this.widget.content as Notebook).model as NotebookModel).value;
-    console.log('value', value);
-    const cells = ((this.widget.content as Notebook).model as NotebookModel).cells;
-    console.log('cells', cells);
+    const text = ((this.widget.content as Notebook).model as NotebookModel).toString();
+    console.log('toString()', text);
+    this.resolver.addVersion(text, 'local');
   }
 
   private _addListener(signal: ISignal<any, any>, callback: any){

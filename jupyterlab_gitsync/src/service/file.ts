@@ -1,5 +1,4 @@
 import { DocumentWidget, DocumentRegistry, DocumentModel } from '@jupyterlab/docregistry';
-import { Contents } from '@jupyterlab/services'
 import { ISignal, Signal } from '@lumino/signaling';
 import { ContentsManager, Contents } from '@jupyterlab/services';
 
@@ -8,7 +7,7 @@ import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 import { CodeMirror } from 'codemirror';
 
 import { IFile } from './tracker';
-import { MergeResolver } from './resolver';
+import { FileResolver } from './resolver';
 
 const fs = new ContentsManager();
 
@@ -17,7 +16,7 @@ export class File implements IFile {
   context: DocumentRegistry.Context;
   editor: CodeMirror;
   doc: CodeMirror.doc;
-  resolver: MergeResolver;
+  resolver: FileResolver;
   view: { 
     left: number,
     top: number, 
@@ -34,7 +33,7 @@ export class File implements IFile {
     this.editor = ((widget.content as FileEditor)
       .editor as CodeMirrorEditor).editor;
     this.doc = this.editor.doc;
-    this.resolver = new MergeResolver(this);
+    this.resolver = new FileResolver(this);
 
     this._getInitVersion();
     this._addListeners();
@@ -133,7 +132,7 @@ export class File implements IFile {
       .model as DocumentModel).stateChanged, this._dirtyStateListener);
   }
   
-  private _conflictListener(sender: MergeResolver, conflict: boolean){
+  private _conflictListener(sender: FileResolver, conflict: boolean){
     this._conflictState.emit(conflict);
   }
 

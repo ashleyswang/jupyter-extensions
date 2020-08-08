@@ -6,12 +6,23 @@ import { NotebookPanel } from '@jupyterlab/notebook';
 import { File } from './file';
 import { NotebookFile } from './notebook_file';
 
+export interface IResolver {
+  file: IFile;
+  path: string;
+  conflict: boolean;
+  conflictState: ISignal<this, boolean>;
+
+  addVersion(text: string, origin: string): void;
+  mergeVersions(): Promise<any>;
+}
+
 export interface IFile {
   widget: IDocumentWidget;
   context: DocumentRegistry.Context;
   path: string;
   conflictState: ISignal<this, boolean>;
   dirtyState: ISignal<this, boolean>;
+  resolver: IResolver
 
   save(): Promise<void>;
   reload(): Promise<void>;

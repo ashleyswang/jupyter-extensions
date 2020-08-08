@@ -9,7 +9,7 @@ import { NotebookResolver } from './notebook_resolver';
 
 const fs = new ContentsManager();
 
-// TO DO: implement most functionality for NotebookFile
+// TO DO (ashleyswang): implement most functionality for NotebookFile
 // mostly a placeholder file with outline of needed functions
 // so compiler doesn't complain
 
@@ -56,7 +56,7 @@ export class NotebookFile implements IFile {
   }
 
   private async _getRemoteVersion() {
-    // TO DO: change to get raw string of notebook file
+    // TO DO (ashleyswang): change to get raw string of notebook file
     const contents = await fs.get(this.path, {content: false});
     console.log(contents.content);
   }
@@ -76,7 +76,7 @@ export class NotebookFile implements IFile {
   // }
 
   private _disposedListener(){
-    // TO DO: add functionality to remove resources after closing document
+    // TO DO (ashleyswang): add functionality to remove resources after closing document
 
     // this._removeListener(((this.widget.content as Notebook)
     //   .model as NotebookModel).stateChanged, this._dirtyStateListener);

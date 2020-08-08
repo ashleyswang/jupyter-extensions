@@ -15,7 +15,7 @@ function token() {
   return '/$*' + token + '*$/';
 }
 
-// TO DO: implement most functionality for NotebookResolver
+// TO DO (ashleyswang): implement most functionality for NotebookResolver
 // mostly a placeholder file with outline of needed functions
 // so compiler doesn't complain
 

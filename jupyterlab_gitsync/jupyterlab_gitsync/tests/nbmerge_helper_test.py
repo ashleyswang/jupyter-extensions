@@ -150,6 +150,7 @@ class TestNotebookInit(unittest.TestCase):
 
     updated_remote = NotebookMergeHandler.update_remote(None, path, fpath, dpath)
 
+<<<<<<< HEAD
     self.assertEqual(updated_remote, None, msg="update_remote exited with non-zero exit code")
 
     with open('test_files/.sync_cache/init_cache_test/remote.ipynb') as r:

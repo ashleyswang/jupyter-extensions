@@ -21,7 +21,7 @@ class NotebookInitHandler(APIHandler):
     dname = fpath.replace('/', ':').replace('.ipynb','')
 
     dpath = '.sync_cache/'+dname
-    file_exists = subprocess.call(['ls', dpath], cwd=path)
+    file_exists = not subprocess.call(['ls', dpath], cwd=path)
     if not file_exists:
       subprocess.call(['mkdir', dpath], cwd=path)
 
@@ -65,7 +65,8 @@ class NotebookMergeHandler(APIHandler):
   * notify caller of conflicts
   """
   def update_base(self, path, dpath):
-    subprocess.call(['cp', dpath+'/merged.ipynb', dpath+'/base.ipynb'], cwd=path)
+    return_code = subprocess.call(['cp', dpath+'/merged.ipynb', dpath+'/base.ipynb'], cwd=path)
+    return return_code == 0
 
   def update_local(self, path, dpath, text):
     file_path = path+'/'+dpath+'/local.ipynb'
@@ -74,9 +75,10 @@ class NotebookMergeHandler(APIHandler):
     file.close()
 
   def update_remote(self, path, fpath, dpath):
-    subprocess.call(['cp', fpath, dpath+'/remote.ipynb'], cwd=path)
+    return_code = subprocess.call(['cp', fpath, dpath+'/remote.ipynb'], cwd=path)
+    return return_code == 0
 
-  def update_cache_files(self. path, fpath, dpath, text):
+  def update_cache_files(self, path, fpath, dpath, text):
     self.update_base(path, dpath)
     self.update_local(path, dpath, text)
     self.update_remote(path, fpath, depath)

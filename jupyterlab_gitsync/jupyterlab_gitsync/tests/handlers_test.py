@@ -19,13 +19,14 @@ class TestNotebookInitHandler(tornado.testing.AsyncHTTPTestCase):
   def get_app(self): 
     return create_test_app()
 
-  def test_notebook_init(self):
-    path = './test_files'
-    file_path = './test_files/init_cache_test.ipynb'
-
-    # TO DO (ashleyswang): complete full handler test
+  # TO DO (ashleyswang): create test for handler full functionality
 
 class TestNotebookMergeHandler(tornado.testing.AsyncHTTPTestCase):
+
+  def get_app(self): 
+    return create_test_app()
+
+  # TO DO (ashleyswang): create test for handler full functionality
 
 if __name__ == '__main__':
   unittest.main()

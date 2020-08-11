@@ -79,7 +79,7 @@ class NotebookMergeHandler(APIHandler):
   def update_cache_files(self, path, fpath, dpath, text):
     self.update_base(path, dpath)
     self.update_local(path, dpath, text)
-    self.update_remote(path, fpath, depath)
+    self.update_remote(path, fpath, dpath)
 
   def merge_notebooks(self, path, dpath):
     dpath_abs = path+'/'+dpath
@@ -108,7 +108,7 @@ class NotebookMergeHandler(APIHandler):
       self.update_cache_files(path, fpath, dpath, text)
       merged = self.merge_notebooks(path, dpath)
       if (merged): 
-        self.update_disk_file(path, fpath, depath)
+        self.update_disk_file(path, fpath, dpath)
         self.finish({'success': True})
       else:
         self.finish({'conflict': True})

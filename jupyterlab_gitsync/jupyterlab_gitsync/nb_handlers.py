@@ -60,12 +60,7 @@ class NotebookMergeHandler(APIHandler):
   * if merge successful: update disk version to merged version
   """
   def update_base(self, path, dpath):
-<<<<<<< HEAD
     assert subprocess.call(['cp', dpath+'/merged.ipynb', dpath+'/base.ipynb'], cwd=path) == 0, 'update base.ipynb failed'
-=======
-    return_code = subprocess.call(['cp', dpath+'/merged.ipynb', dpath+'/base.ipynb'], cwd=path)
-    return return_code == 0
->>>>>>> add nb handler helper tests
 
   def update_local(self, path, dpath, text):
     file_path = path+'/'+dpath+'/local.ipynb'
@@ -74,12 +69,7 @@ class NotebookMergeHandler(APIHandler):
     file.close()
 
   def update_remote(self, path, fpath, dpath):
-<<<<<<< HEAD
     assert subprocess.call(['cp', fpath, dpath+'/remote.ipynb'], cwd=path) == 0, 'update remote.ipynb failed'
-=======
-    return_code = subprocess.call(['cp', fpath, dpath+'/remote.ipynb'], cwd=path)
-    return return_code == 0
->>>>>>> add nb handler helper tests
 
   def update_cache_files(self, path, fpath, dpath, text):
     self.update_base(path, dpath)

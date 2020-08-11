@@ -5,7 +5,7 @@ from jupyterlab_gitsync.nb_handlers import NotebookInitHandler
 def make_setup():
   subprocess.call(['mkdir', 'test_files'], cwd='.')
   subprocess.call(['mkdir', 'test_files/.sync_cache'], cwd='.')
-  file_path = './test_files/init_cache_test.ipynb'
+  file_path = 'test_files/init_cache_test.ipynb'
 
   file_contents = '{                            \n\
                      "cells": [                 \n\
@@ -40,8 +40,8 @@ class TestNotebookInit(unittest.TestCase):
 
   def test_add_file_cache(self):
     make_setup()
-    path = './test_files'
-    file_path = './test_files/init_cache_test.ipynb'
+    path = 'test_files'
+    file_path = 'test_files/init_cache_test.ipynb'
 
     fpath, dpath = NotebookInitHandler.add_file_cache(None, path, file_path)
 
@@ -55,9 +55,9 @@ class TestNotebookInit(unittest.TestCase):
 
   def test_init_cache_files(self):
     make_setup()
-    subprocess.call(['mkdir', './test_files/.sync_cache/init_cache_test'], cwd='.')
+    subprocess.call(['mkdir', 'test_files/.sync_cache/init_cache_test'], cwd='.')
 
-    path = './test_files'
+    path = 'test_files'
     fpath = 'init_cache_test.ipynb'
     dpath = '.sync_cache/init_cache_test'
 
@@ -69,7 +69,7 @@ class TestNotebookInit(unittest.TestCase):
     self.assertTrue(b'remote.ipynb' in cache_file_list, msg="'remote.ipynb' was not created")
     self.assertTrue(b'merged.ipynb' in cache_file_list, msg="'merged.ipynb' was not created")
 
-    cache_file_path = './test_files/.sync_cache/init_cache_test/'
+    cache_file_path = 'test_files/.sync_cache/init_cache_test/'
     
     with open(cache_file_path+'base.ipynb', 'r') as b:
       base = b.read()

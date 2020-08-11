@@ -25,5 +25,6 @@ def load_jupyter_server_extension(nb_server_app):
       (url_path_join(gcp_v1_endpoint, 'setup') + '(.*)', SetupHandler),
       (url_path_join(gcp_v1_endpoint, 'nbinit') + '(.*)', NotebookInitHandler),
       (url_path_join(gcp_v1_endpoint, 'nbmerge') + '(.*)', NotebookMergeHandler),
+      (url_path_join(gcp_v1_endpoint, 'nbresolve') + '(.*)', NotebookResolveHandler)
     ])
 

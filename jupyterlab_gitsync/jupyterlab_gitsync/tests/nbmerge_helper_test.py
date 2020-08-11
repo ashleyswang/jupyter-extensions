@@ -121,7 +121,7 @@ class TestNotebookInit(unittest.TestCase):
 
     updated_base = NotebookMergeHandler.update_base(None, path, dpath)
 
-    self.assertTrue(updated_base, msg="update_base exited with non-zero exit code")
+    self.assertEqual(updated_base, None, msg="update_base exited with non-zero exit code")
 
     with open('./test_files/.sync_cache/init_cache_test/base.ipynb') as b:
       base_ud_contents = b.read()
@@ -155,7 +155,7 @@ class TestNotebookInit(unittest.TestCase):
 
     updated_remote = NotebookMergeHandler.update_remote(None, path, fpath, dpath)
 
-    self.assertTrue(updated_remote, msg="update_remote exited with non-zero exit code")
+    self.assertEqual(updated_remote, None, msg="update_remote exited with non-zero exit code")
 
     with open('./test_files/.sync_cache/init_cache_test/remote.ipynb') as r:
       remote_ud_contents = r.read()
@@ -188,6 +188,25 @@ class TestNotebookInit(unittest.TestCase):
 
     self.assertTrue(local_changes in merged_ud_contents, msg='local changes are not in merged.ipynb')
     self.assertTrue(remote_changes in merged_ud_contents, msg='remote changes are not in merged.ipynb')
+    remove_setup()
+
+  def test_update_disk_file(self):
+    make_setup()
+    with open('./test_files/.sync_cache/init_cache_test/merged.ipynb', 'w') as m:
+      m.write(base_contents)
+
+    path = './test_files'
+    fpath = 'init_cache_test.ipynb'
+    dpath = '.sync_cache/init_cache_test'
+
+    updated_disk_file = NotebookMergeHandler.update_disk_file(None, path, fpath, dpath)
+
+    self.assertEqual(updated_disk_file, None, msg="update_remote exited with non-zero exit code")
+
+    with open('./test_files/init_cache_test.ipynb') as og:
+      original = og.read()
+
+    self.assertEqual(original, base_contents, msg='remote file did not successfully copy into remote.ipynb')
     remove_setup()
 
 if __name__ == '__main__':

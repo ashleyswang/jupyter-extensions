@@ -112,18 +112,18 @@ class TestNotebookInit(unittest.TestCase):
 
   def test_update_base(self):
     make_setup()
-    base_og_path = './test_files/.sync_cache/init_cache_test/merged.ipynb'
+    base_og_path = 'test_files/.sync_cache/init_cache_test/merged.ipynb'
     with open(base_og_path, 'w') as b:
       b.write(base_contents)
 
-    path = './test_files'
+    path = 'test_files'
     dpath = '.sync_cache/init_cache_test'
 
     updated_base = NotebookMergeHandler.update_base(None, path, dpath)
 
     self.assertEqual(updated_base, None, msg="update_base exited with non-zero exit code")
 
-    with open('./test_files/.sync_cache/init_cache_test/base.ipynb') as b:
+    with open('test_files/.sync_cache/init_cache_test/base.ipynb') as b:
       base_ud_contents = b.read()
 
     self.assertEqual(base_ud_contents, base_contents, msg='merged.ipynb did not successfully copy into base.ipynb')
@@ -132,12 +132,12 @@ class TestNotebookInit(unittest.TestCase):
   def test_update_local(self):
     make_setup()
 
-    path = './test_files'
+    path = 'test_files'
     dpath = '.sync_cache/init_cache_test'
 
     NotebookMergeHandler.update_local(None, path, dpath, local_contents)
 
-    with open('./test_files/.sync_cache/init_cache_test/local.ipynb') as l:
+    with open('test_files/.sync_cache/init_cache_test/local.ipynb') as l:
       local_ud_contents = l.read()
 
     self.assertEqual(local_ud_contents, local_contents, msg='input text did not successfully copy into local.ipynb')
@@ -145,11 +145,11 @@ class TestNotebookInit(unittest.TestCase):
 
   def test_update_remote(self):
     make_setup()
-    remote_og_path = './test_files/init_cache_test.ipynb'
+    remote_og_path = 'test_files/init_cache_test.ipynb'
     with open(remote_og_path, 'w') as r:
       r.write(remote_contents)
 
-    path = './test_files'
+    path = 'test_files'
     fpath = 'init_cache_test.ipynb'
     dpath = '.sync_cache/init_cache_test'
 
@@ -157,7 +157,7 @@ class TestNotebookInit(unittest.TestCase):
 
     self.assertEqual(updated_remote, None, msg="update_remote exited with non-zero exit code")
 
-    with open('./test_files/.sync_cache/init_cache_test/remote.ipynb') as r:
+    with open('test_files/.sync_cache/init_cache_test/remote.ipynb') as r:
       remote_ud_contents = r.read()
 
     self.assertEqual(remote_ud_contents, remote_contents, msg='remote file did not successfully copy into remote.ipynb')
@@ -165,14 +165,14 @@ class TestNotebookInit(unittest.TestCase):
 
   def test_merge_notebooks(self):
     make_setup()
-    with open('./test_files/.sync_cache/init_cache_test/base.ipynb', 'w') as b:
+    with open('test_files/.sync_cache/init_cache_test/base.ipynb', 'w') as b:
       b.write(base_contents)
-    with open('./test_files/.sync_cache/init_cache_test/local.ipynb', 'w') as l:
+    with open('test_files/.sync_cache/init_cache_test/local.ipynb', 'w') as l:
       l.write(local_contents)
-    with open('./test_files/.sync_cache/init_cache_test/remote.ipynb', 'w') as r:
+    with open('test_files/.sync_cache/init_cache_test/remote.ipynb', 'w') as r:
       r.write(remote_contents)
 
-    path = './test_files'
+    path = 'test_files'
     dpath = '.sync_cache/init_cache_test'
 
     NotebookMergeHandler.merge_notebooks(None, path, dpath)
@@ -180,7 +180,7 @@ class TestNotebookInit(unittest.TestCase):
     merged_exists = b'merged.ipynb' in subprocess.check_output(['ls', dpath], cwd=path)
     self.assertTrue(merged_exists, msg='nbmerge failed to create new merged file')
 
-    with open('./test_files/.sync_cache/init_cache_test/merged.ipynb') as m:
+    with open('test_files/.sync_cache/init_cache_test/merged.ipynb') as m:
       merged_ud_contents = m.read()
 
     local_changes = "# This is a change from our LOCAL changes"
@@ -192,10 +192,10 @@ class TestNotebookInit(unittest.TestCase):
 
   def test_update_disk_file(self):
     make_setup()
-    with open('./test_files/.sync_cache/init_cache_test/merged.ipynb', 'w') as m:
+    with open('test_files/.sync_cache/init_cache_test/merged.ipynb', 'w') as m:
       m.write(base_contents)
 
-    path = './test_files'
+    path = 'test_files'
     fpath = 'init_cache_test.ipynb'
     dpath = '.sync_cache/init_cache_test'
 
@@ -203,7 +203,7 @@ class TestNotebookInit(unittest.TestCase):
 
     self.assertEqual(updated_disk_file, None, msg="update_remote exited with non-zero exit code")
 
-    with open('./test_files/init_cache_test.ipynb') as og:
+    with open('test_files/init_cache_test.ipynb') as og:
       original = og.read()
 
     self.assertEqual(original, base_contents, msg='remote file did not successfully copy into remote.ipynb')

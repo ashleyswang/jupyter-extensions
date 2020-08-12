@@ -1,104 +1,8 @@
 import unittest
 import subprocess
+import json
 from jupyterlab_gitsync.nb_handlers import NotebookMergeHandler
-
-base_contents = '\
-  {                                                           \n\
-    "cells": [                                                \n\
-    {                                                         \n\
-     "cell_type": "code",                                     \n\
-     "execution_count": null,                                 \n\
-     "metadata": {},                                          \n\
-     "outputs": [],                                           \n\
-     "source": [                                              \n\
-      "# This is our base cell\\n",                           \n\
-      "# Other cells should be written around this cell\\n",  \n\
-      "# We can test merge with additions to base cells\\n",  \n\
-      "# and adding cells entirely."                          \n\
-     ]                                                        \n\
-    },                                                        \n\
-    {                                                         \n\
-     "cell_type": "code",                                     \n\
-     "execution_count": null,                                 \n\
-     "metadata": {},                                          \n\
-     "outputs": [],                                           \n\
-     "source": [                                              \n\
-      "print(\\"Hello, this is a cell from the base version of the file.\\")" \n\
-     ]                                                        \n\
-    }                                                         \n\
-   ],                                                         \n\
-   "metadata": {                                              \n\
-    "kernelspec": {                                           \n\
-     "display_name": "",                                      \n\
-     "name": ""                                               \n\
-    },                                                        \n\
-    "language_info": {                                        \n\
-     "name": ""                                               \n\
-    }                                                         \n\
-   },                                                         \n\
-   "nbformat": 4,                                             \n\
-   "nbformat_minor": 4                                        \n\
-  }'
-
-remote_contents = '\
-  {                                                           \n\
-   "cells": [                                                 \n\
-    {                                                         \n\
-     "cell_type": "code",                                     \n\
-     "execution_count": null,                                 \n\
-     "metadata": {},                                          \n\
-     "outputs": [],                                           \n\
-     "source": [                                              \n\
-      "# This is our base cell\\n",                           \n\
-      "# Other cells should be written around this cell\\n",  \n\
-      "# We can test merge with additions to base cells\\n",  \n\
-      "# and adding cells entirely.\\n",                      \n\
-      "\\n",                                                  \n\
-      "# This is a comment from a REMOTE change"              \n\
-     ]                                                        \n\
-    },                                                        \n\
-    {                                                         \n\
-     "cell_type": "code",                                     \n\
-     "execution_count": null,                                 \n\
-     "metadata": {},                                          \n\
-     "outputs": [],                                           \n\
-     "source": [                                              \n\
-      "print(\\"Hello, this is a cell from the base version of the file.\\")" \n\
-     ]                                                        \n\
-    },                                                        \n\
-    {                                                         \n\
-     "cell_type": "code",                                     \n\
-     "execution_count": null,                                 \n\
-     "metadata": {},                                          \n\
-     "outputs": [],                                           \n\
-     "source": [                                              \n\
-      "print(\\"This is a change from the REMOTE repository.\\")" \n\
-     ]                                                        \n\
-    }                                                         \n\
-   ],                                                         \n\
-   "metadata": {                                              \n\
-    "kernelspec": {                                           \n\
-     "display_name": "",                                      \n\
-     "name": ""                                               \n\
-    },                                                        \n\
-    "language_info": {                                        \n\
-     "name": ""                                               \n\
-    }                                                         \n\
-   },                                                         \n\
-   "nbformat": 4,                                             \n\
-   "nbformat_minor": 4                                        \n\
-  }'
- 
-local_contents = '{"metadata":{"kernelspec":{"display_name":"","name":""},\
-  "language_info":{"name":""}},"nbformat_minor":4,"nbformat":4,"cells":\
-  [{"cell_type":"code","source":"# This is a change from our LOCAL changes\\n\
-  \\n# This is our base cell\\n# Other cells should be written around this cell\
-  \\n# We can test merge with additions to base cells\\n# and adding cells entirely.",\
-  "metadata":{"trusted":true},"execution_count":null,"outputs":[]},{"cell_type":"code",\
-  "source":"print(\\"This is a cell from our LOCAL changes\\")","metadata":{"trusted":true},\
-  "execution_count":null,"outputs":[]},{"cell_type":"code","source":"print(\\"Hello, this\
-  is a cell from the base version of the file.\\")","metadata":{"trusted":true},\
-  "execution_count":null,"outputs":[]}]}'
+from jupyterlab_gitsync.tests.nbmerge_setup import *
 
 def make_setup():
   subprocess.call(['mkdir', 'test_files'], cwd='.')
@@ -110,7 +14,7 @@ def remove_setup():
 
 class TestNotebookInit(unittest.TestCase):
 
-  def test_update_base(self):
+  def test_update_base_null(self):
     make_setup()
     base_og_path = 'test_files/.sync_cache/init_cache_test/merged.ipynb'
     with open(base_og_path, 'w') as b:
@@ -119,7 +23,7 @@ class TestNotebookInit(unittest.TestCase):
     path = 'test_files'
     dpath = '.sync_cache/init_cache_test'
 
-    updated_base = NotebookMergeHandler.update_base(None, path, dpath)
+    updated_base = NotebookMergeHandler.update_base(None, path, dpath, None)
 
     self.assertEqual(updated_base, None, msg="update_base exited with non-zero exit code")
 
@@ -129,18 +33,36 @@ class TestNotebookInit(unittest.TestCase):
     self.assertEqual(base_ud_contents, base_contents, msg='merged.ipynb did not successfully copy into base.ipynb')
     remove_setup()
 
-  def test_update_local(self):
+  def test_update_base_contents(self):
     make_setup()
+    contents = json.loads(base_contents)
 
     path = 'test_files'
     dpath = '.sync_cache/init_cache_test'
 
-    NotebookMergeHandler.update_local(None, path, dpath, local_contents)
+    updated_base = NotebookMergeHandler.update_base(None, path, dpath, contents)
+
+    self.assertEqual(updated_base, None, msg="update_base did not successfully write to base.ipynb")
+
+    with open('test_files/.sync_cache/init_cache_test/base.ipynb') as b:
+      file_contents = json.loads(b.read())
+
+    self.assertEqual(contents, file_contents, msg='input contents did not successfully copy into base.ipynb')
+    remove_setup()
+
+  def test_update_local(self):
+    make_setup()
+    contents = json.loads(local_contents)
+
+    path = 'test_files'
+    dpath = '.sync_cache/init_cache_test'
+
+    NotebookMergeHandler.update_local(None, path, dpath, contents)
 
     with open('test_files/.sync_cache/init_cache_test/local.ipynb') as l:
-      local_ud_contents = l.read()
+      file_contents = json.loads(l.read())
 
-    self.assertEqual(local_ud_contents, local_contents, msg='input text did not successfully copy into local.ipynb')
+    self.assertEqual(contents, file_contents, msg='input contents did not successfully copy into local.ipynb')
     remove_setup()
 
   def test_update_remote(self):
@@ -188,6 +110,30 @@ class TestNotebookInit(unittest.TestCase):
 
     self.assertTrue(local_changes in merged_ud_contents, msg='local changes are not in merged.ipynb')
     self.assertTrue(remote_changes in merged_ud_contents, msg='remote changes are not in merged.ipynb')
+    remove_setup()
+
+  def test_remove_token(self):
+    make_setup()
+    with open('test_files/.sync_cache/init_cache_test/merged.ipynb', 'w') as file:
+      file.write(token_contents)
+
+    path = 'test_files'
+    dpath = '.sync_cache/init_cache_test'
+    token = '/$*TEST_TOKEN*$/'
+
+    index, pos = NotebookMergeHandler.remove_token(None, path, dpath, token)
+
+    print(index, pos)
+
+    self.assertEqual(index, 0, msg='returned active cell index position incorrect')
+    self.assertEqual(pos['line'], 3, msg='returned cursor position line incorrect')
+    self.assertEqual(pos['column'], 0, msg='returned cursor position column incorrect')
+
+    with open('test_files/.sync_cache/init_cache_test/merged.ipynb', 'r') as file:
+      file_contents = json.loads(file.read())
+    contents = json.loads(local_contents)
+    
+    self.assertEqual(contents, file_contents, msg='token was not successfully removed')
     remove_setup()
 
   def test_update_disk_file(self):

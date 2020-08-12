@@ -80,10 +80,10 @@ class NotebookMergeHandler(APIHandler):
   def update_remote(self, path, fpath, dpath):
     assert subprocess.call(['cp', fpath, dpath+'/remote.ipynb'], cwd=path) == 0, 'update remote.ipynb failed'
 
-  def update_cache_files(self, path, fpath, dpath, text):
-    self.update_base(path, dpath)
-    self.update_local(path, dpath, text)
-    self.update_remote(path, fpath, depath)
+  def update_cache_files(self, path, fpath, dpath, local, base):
+    self.update_base(path, dpath, base)
+    self.update_local(path, dpath, local)
+    self.update_remote(path, fpath, dpath)
 
   def merge_notebooks(self, path, dpath):
     dpath_abs = path+'/'+dpath
@@ -136,8 +136,8 @@ class NotebookMergeHandler(APIHandler):
       merged = self.merge_notebooks(path, dpath)
       index, pos = self.remove_token(path, dpath, token)
       if (merged): 
-        self.update_disk_file(path, fpath, depath)
-        self.finish({'success': True})
+        self.update_disk_file(path, fpath, dpath)
+        self.finish({'success': True, 'index': index, 'pos': pos})
       else:
         self.finish({'conflict': True})
     except Exception as e:

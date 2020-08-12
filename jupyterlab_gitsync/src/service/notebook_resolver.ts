@@ -167,4 +167,3 @@ export class NotebookResolver implements IResolver {
     });
   }
 }
-

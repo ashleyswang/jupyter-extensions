@@ -8,7 +8,7 @@ import {
 } from '@jupyterlab/application';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { IEditorTracker } from '@jupyterlab/fileeditor';
+import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { FileTracker } from './service/tracker';
 import { GitManager } from './service/git';
@@ -19,7 +19,7 @@ async function activate(
   app: JupyterFrontEnd,
   manager: IDocumentManager,
   shell: ILabShell,
-  editor: IEditorTracker
+  nbtracker: INotebookTracker
 ) {
   // TO DO (ashleyswang): add config method to determine path and options for git sync 
   // path requires no './' at beginning and no '/' at end for handler
@@ -35,6 +35,12 @@ async function activate(
   widget.addClass('jp-CookiesIcon');
   app.shell.add(widget, 'left', { rank: 100 });
   console.log('git widget activated');
+
+  // console.log(nbtracker);
+  // nbtracker.activeCellChanged.connect((tracker, cell) => {
+  //   console.log(cell);
+  //   console.log(cell.editor);
+  // })
 }
 
 /**
@@ -42,7 +48,7 @@ async function activate(
  */
 const GitSyncPlugin: JupyterFrontEndPlugin<void> = {
   id: 'gitsync:gitsync',
-  requires: [IDocumentManager, ILabShell, IEditorTracker],
+  requires: [IDocumentManager, ILabShell, INotebookTracker],
   activate: activate,
   autoStart: true,
 };

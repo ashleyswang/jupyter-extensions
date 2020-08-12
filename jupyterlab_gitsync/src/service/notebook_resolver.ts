@@ -1,4 +1,4 @@
-import { CodeMirror } from 'codemirror';
+import { CodeEditor } from '@jupyterlab/codeeditor';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISignal, Signal } from '@lumino/signaling';
 import { requestAPI } from './request_api';
@@ -16,15 +16,16 @@ function token() {
 }
 
 interface Versions {
-  base: string;
-  local: string;
-  remote: string;
+  base: any;
+  local: any;
+  remote: any;
+  local_tok: any;
 }
 
 export class NotebookResolver implements IResolver {
   _file: NotebookFile;
   _token: string = token();
-  _cursor: CodeMirror.Pos;
+  _cursor: CodeEditor.IPosition;
   _fpath: string;
   _dpath: string;
 
@@ -32,6 +33,7 @@ export class NotebookResolver implements IResolver {
     base: undefined,
     local: undefined,
     remote: undefined,
+    local_tok: undefined
   };
 
   private _conflict: boolean;
@@ -61,8 +63,23 @@ export class NotebookResolver implements IResolver {
     return this._conflictState;
   }
 
-  addVersion(text: string, origin: 'base' | 'local' | 'remote'): void {
-    this._versions[origin] = text;
+  setCursorToken(index: number, pos: CodeEditor.IPosition) {
+    const json = this.versions.local;
+    const source = json.cells[index].source;
+    const text = source.split('\n');
+    let line = text[pos.line];
+
+    const before = line.slice(0, pos.column);
+    const after = line.slice(pos.column);
+    line = before + '\n' + this._token + '\n' + after;
+
+    text[pos.line] = line;
+    json.cells[index].source = text.join('\n')
+    this.addVersion(json, 'local_tok');
+  }
+
+  addVersion(content: any, origin: 'base' | 'local' | 'remote' | 'local_tok' ): void {
+    this._versions[origin] = content;
   }
 
   async sendInitRequest(): Promise<any> {
@@ -86,9 +103,18 @@ export class NotebookResolver implements IResolver {
   async mergeVersions(): Promise<any> {
     const response = await this._sendMergeRequest();
 
-    if (response.success) { return true; }
-    else if (response.conflict) { await this._resolveConflicts(); } 
-    else { throw Error(response.error); }
+    if (response.success) { 
+      const ret = {
+        index: response.index, 
+        pos: response.pos
+      } 
+      return ret;
+    } else if (response.conflict) { 
+      // TO DO (ashleyswang): return value for conflicts
+      await this._resolveConflicts(); 
+    } else { 
+      throw Error(response.error); 
+    }
   }
 
   private async _sendMergeRequest() {
@@ -98,7 +124,9 @@ export class NotebookResolver implements IResolver {
         path: this.file.git_path,
         fpath: this._fpath,
         dpath: this._dpath,
-        text: this.versions.local
+        local: this.versions.local_tok,
+        base: this.versions.base,
+        token: this._token
       }),
     };
 

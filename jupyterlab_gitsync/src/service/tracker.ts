@@ -12,7 +12,7 @@ export interface IResolver {
   conflict: boolean;
   conflictState: ISignal<this, boolean>;
 
-  addVersion(text: string, origin: string): void;
+  addVersion(content: any, origin: string): void;
   mergeVersions(): Promise<any>;
 }
 

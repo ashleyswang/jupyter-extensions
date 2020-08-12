@@ -54,6 +54,8 @@ export class File implements IFile {
   async save() {
     try{
       await this.context.save();
+      const text = this.doc.getValue();
+      this.resolver.addVersion(text, 'base');
     } catch (error) {
       console.warn(error);
     }

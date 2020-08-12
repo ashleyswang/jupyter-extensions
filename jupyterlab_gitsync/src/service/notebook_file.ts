@@ -2,12 +2,8 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { NotebookPanel, Notebook, NotebookModel } from '@jupyterlab/notebook';
 import { ISignal, Signal } from '@lumino/signaling';
 
-// import { ContentsManager } from '@jupyterlab/services';
-
 import { IFile } from './tracker';
 import { NotebookResolver } from './notebook_resolver';
-
-// const fs = new ContentsManager();
 
 // TO DO (ashleyswang): implement most functionality for NotebookFile
 // mostly a placeholder file with outline of needed functions
@@ -15,8 +11,13 @@ import { NotebookResolver } from './notebook_resolver';
 
 export class NotebookFile implements IFile {
   widget: NotebookPanel;
+  content: Notebook;
   context: DocumentRegistry.Context;
   resolver: NotebookResolver;
+  view: {
+    left: number,
+    top: number
+  }
   // TO DO (ashleyswang): decide how git path is passed into NotebookFile
   // needed for NotebookResolver handlers
   git_path: string = 'jupyterlab_gitsync/TEST';
@@ -26,6 +27,7 @@ export class NotebookFile implements IFile {
 
   constructor(widget: NotebookPanel) {
     this.widget = widget;
+    this.content = widget.content;
     this.context = widget.context;
     this.resolver = new NotebookResolver(this);
 
@@ -48,6 +50,8 @@ export class NotebookFile implements IFile {
   async save() {
     try{
       await this.context.save();
+      const content = (this.content.model as NotebookModel).toJSON();
+      this.resolver.addVersion(content, 'base');
     } catch (error) {
       console.warn(error);
     }
@@ -55,13 +59,14 @@ export class NotebookFile implements IFile {
 
   async reload() {
     this._getLocalVersion();
-    const merged = this.resolver.mergeVersions();
-    if (merged) { await this._displayText(); }
+    this._getEditorView();
+    const merged = await this.resolver.mergeVersions();
+    if (merged) { await this._displayText(merged); }
   }
 
-  private async _displayText() {
-    // TO DO (ashleyswang): maintain UI scroll view & cursor position
+  private async _displayText(merged) {
     await this.context.revert();
+    this._setEditorView(merged);
   }
 
   private async _getInitVersion() {
@@ -69,9 +74,28 @@ export class NotebookFile implements IFile {
   }
 
   private async _getLocalVersion() {
-    const text = ((this.widget.content as Notebook).model as NotebookModel).toString();
-    console.log('toString()', text);
-    this.resolver.addVersion(text, 'local');
+    const content = (this.content.model as NotebookModel).toJSON();
+    this.resolver.addVersion(content, 'local');
+  }
+
+  private _getEditorView(){
+    this.view = {
+      left: this.content.node.scrollLeft,
+      top: this.content.node.scrollTop
+    };
+    const activeIndex = this.content.activeCellIndex;
+    const cursorPos = this.content.activeCell.editor.getCursorPosition();
+    this.resolver.setCursorToken(activeIndex, cursorPos);
+  }
+
+  private _setEditorView(merged){
+    const index = merged.index;
+    const pos = merged.pos;
+    const cell= this.content.widgets[index];
+    cell.editor.setCursorPosition(pos);
+
+    this.content.node.scrollLeft = this.view.left;
+    this.content.node.scrollTop = this.view.top;
   }
 
   private _addListener(signal: ISignal<any, any>, callback: any){
@@ -84,7 +108,7 @@ export class NotebookFile implements IFile {
   }
 
   private _addListeners() {
-    this._addListener(((this.widget.content as Notebook)
+    this._addListener((this.content
       .model as NotebookModel).stateChanged, this._dirtyStateListener);
   }
 }

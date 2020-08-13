@@ -5,10 +5,6 @@ import { ISignal, Signal } from '@lumino/signaling';
 import { IFile } from './tracker';
 import { NotebookResolver } from './notebook_resolver';
 
-// TO DO (ashleyswang): implement most functionality for NotebookFile
-// mostly a placeholder file with outline of needed functions
-// so compiler doesn't complain
-
 export class NotebookFile implements IFile {
   widget: NotebookPanel;
   content: Notebook;
@@ -52,16 +48,21 @@ export class NotebookFile implements IFile {
       await this.context.save();
       const content = (this.content.model as NotebookModel).toJSON();
       this.resolver.addVersion(content, 'base');
+      console.log(this.path, 'saved');
     } catch (error) {
       console.warn(error);
     }
   }
 
   async reload() {
+    console.log(this.path, 'reload start');
     this._getLocalVersion();
     this._getEditorView();
     const merged = await this.resolver.mergeVersions();
-    if (merged) { await this._displayText(merged); }
+    setTimeout(async()=>{
+      if (merged) { await this._displayText(merged); }
+      console.log(this.path, 'reload finish');
+    }, 5000); 
   }
 
   private async _displayText(merged) {
@@ -73,7 +74,7 @@ export class NotebookFile implements IFile {
     await this.resolver.sendInitRequest();
   }
 
-  private async _getLocalVersion() {
+  private _getLocalVersion() {
     const content = (this.content.model as NotebookModel).toJSON();
     this.resolver.addVersion(content, 'local');
   }
@@ -89,10 +90,13 @@ export class NotebookFile implements IFile {
   }
 
   private _setEditorView(merged){
-    const index = merged.index;
-    const pos = merged.pos;
-    const cell= this.content.widgets[index];
-    cell.editor.setCursorPosition(pos);
+    if (merged.index){
+      const index = merged.index;
+      const pos = merged.pos;
+      this.content.activeCellIndex = index;
+      const cell = this.content.activeCell;
+      cell.editor.setCursorPosition(pos);
+    }
 
     this.content.node.scrollLeft = this.view.left;
     this.content.node.scrollTop = this.view.top;

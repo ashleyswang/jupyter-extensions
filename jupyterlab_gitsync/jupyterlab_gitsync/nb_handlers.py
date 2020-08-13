@@ -87,12 +87,14 @@ class NotebookMergeHandler(APIHandler):
 
   def merge_notebooks(self, path, dpath):
     dpath_abs = path+'/'+dpath
-    res = subprocess.check_output('nbmerge base.ipynb local.ipynb remote.ipynb > merged.ipynb', 
-      cwd=dpath_abs, shell=True)
+    res = subprocess.run('nbmerge base.ipynb local.ipynb remote.ipynb > merged.ipynb', 
+      cwd=dpath_abs, shell=True, capture_output=True)
+
     print(res)
-    if (res == b''):
+
+    if (res.returncode == 0):
       return True
-    elif (res == b'[W nbmergeapp:57] Conflicts occured during merge operation.'):
+    elif (res.returncode == 1 and res.stderr == b'[W nbmergeapp:57] Conflicts occured during merge operation.\n'):
       return False
     else:
       raise Exception('Nbmerge was unable to process files. Make sure files are .ipynb files.')
@@ -148,6 +150,14 @@ class NotebookResolveHandler(APIHandler):
   """ 
   Updates original .ipynb with user input file
   """
+  def remove_token(self, path, dpath, token):
+    file_path = path+'/'+dpath+'/local.ipynb'
+    with open(file_path, 'r+') as file:
+      text = file.read()
+      text = text.replace('\\n{}\\n'.format(token), '')
+    
+    with open(file_path, 'w+') as file:
+      file.write(text)
 
   def update_disk_file(self, path, fpath, dpath, origin):
     copy_file_path = dpath+'/'+origin+'.ipynb'
@@ -160,8 +170,10 @@ class NotebookResolveHandler(APIHandler):
     fpath = recv['fpath']
     dpath = recv['dpath']
     origin = recv['origin']
+    token = recv['token']
 
     try:
+      if (origin == 'local'): self.remove_token(path, dpath, token)
       self.update_disk_file(path, fpath, dpath, origin)
       self.finish({'success': True})
     except Exception as e:

@@ -111,7 +111,8 @@ export class NotebookResolver implements IResolver {
       return ret;
     } else if (response.conflict) { 
       // TO DO (ashleyswang): return value for conflicts
-      await this._resolveConflicts(); 
+      await this._resolveConflicts();
+      return true; 
     } else { 
       throw Error(response.error); 
     }
@@ -153,12 +154,13 @@ export class NotebookResolver implements IResolver {
         path: this.file.git_path,
         fpath: this._fpath,
         dpath: this._dpath,
-        origin: origin
+        origin: origin, 
+        token: this._token
       }),
     };
 
     const response = await requestAPI('v1/nbresolve', init);
-    if (response.success){ return; }
+    if (response.success){ return true; }
     else{ throw Error(response.error); }
   }
 

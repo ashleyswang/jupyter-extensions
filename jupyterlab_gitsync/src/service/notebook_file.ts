@@ -3,6 +3,8 @@ import { NotebookPanel, Notebook, NotebookModel } from '@jupyterlab/notebook';
 import { ISignal, Signal } from '@lumino/signaling';
 import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 
+import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+
 import { IFile } from './tracker';
 import { NotebookResolver, TextResolver } from './notebook_resolver';
 

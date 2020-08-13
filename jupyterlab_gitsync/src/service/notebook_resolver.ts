@@ -2,6 +2,7 @@ import { CodeEditor } from '@jupyterlab/codeeditor';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISignal, Signal } from '@lumino/signaling';
 import { requestAPI } from './request_api';
+import { default as merge } from 'diff3';
 
 import { IResolver } from './tracker';
 import { NotebookFile } from './notebook_file';
@@ -75,10 +76,10 @@ export class NotebookResolver implements IResolver {
 
     text[pos.line] = line;
     json.cells[index].source = text.join('\n')
-    this.addVersion(json, 'local_tok');
+    this._versions.local_tok = json;
   }
 
-  addVersion(content: any, origin: 'base' | 'local' | 'remote' | 'local_tok' ): void {
+  addVersion(content: any, origin: 'base' | 'local' | 'remote'): void {
     this._versions[origin] = content;
   }
 
@@ -198,3 +199,65 @@ export class NotebookResolver implements IResolver {
   }
 }
 
+interface IResult {
+  text: string,
+  pos: CodeEditor.IPosition,
+}
+export class TextResolver {
+ 
+  private _token = token();
+  private _versions: Versions = {
+    base: undefined,
+    local: undefined, 
+    remote: undefined, 
+    local_tok: undefined
+  }
+
+  addVersion(content: string, origin: 'base' | 'local' | 'remote'): void {
+    this._versions[origin] = content;
+  }
+
+  mergeVersions(pos: CodeEditor.IPosition): IResult {
+    if (this._versions.base == this._versions.local){
+      return undefined;
+    }
+    this._setCursorToken(pos);
+    const merged = merge(this._versions.remote, this._versions.base, this._versions.local_tok);
+    if (this._isConflict(merged)) {
+      return undefined;
+    } else {
+      return this._removeCursorToken(merged);
+    }
+  }
+
+  private _isConflict(merged): boolean {
+    return merged.length > 1 || !merged[0] || merged[0].conflict;
+  }
+
+  private _setCursorToken(pos: CodeEditor.IPosition): void {
+    const text = this._versions.local.split('\n');
+    let line = text[pos.line];
+
+    const before = line.slice(0, pos.column);
+    const after = line.slice(pos.column);
+    line = before + this._token + after;
+
+    text[pos.line] = line;
+    this._versions.local_tok = text.join('\n');
+  }
+
+  private _removeCursorToken(merged): IResult {
+    const text_tok = merged ? merged[0].ok.join('') : '';
+    const text_arr = text_tok.split('\n');
+    for (let i = 0; i < text_arr.length; i++) {
+      if (text_arr[i].indexOf(this._token) > -1) {
+        const line = i;
+        const column = text_arr[i].indexOf(this._token);
+        const pos = { line: line, column: column };
+        const text = text_tok.replace(this._token, '');
+        return {text: text, pos: pos};
+      }
+    }
+  }
+
+}

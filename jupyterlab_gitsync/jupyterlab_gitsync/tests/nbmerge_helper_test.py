@@ -200,7 +200,6 @@ class TestNotebookInit(unittest.TestCase):
     self.assertEqual(original, base_contents, msg='remote file did not successfully copy into remote.ipynb')
 
   def test_update_disk_file(self):
-    make_setup()
     with open('test_files/.sync_cache/init_cache_test/merged.ipynb', 'w') as m:
       m.write(base_contents)
 
@@ -235,7 +234,6 @@ class TestNotebookInit(unittest.TestCase):
       original = og.read()
 
     self.assertEqual(original, base_contents, msg='remote file did not successfully copy into remote.ipynb')
-    remove_setup()
 
 if __name__ == '__main__':
   unittest.main()

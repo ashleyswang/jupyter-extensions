@@ -1,12 +1,13 @@
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { NotebookPanel, Notebook, NotebookModel } from '@jupyterlab/notebook';
 import { ISignal, Signal } from '@lumino/signaling';
-import { CodeMirrorEditor } from '@jupyterlab/codemirror';
 
-import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+import { ContentsManager, Contents } from '@jupyterlab/services';
 
 import { IFile } from './tracker';
 import { NotebookResolver, TextResolver } from './notebook_resolver';
+
+const fs = new ContentsManager();
 
 export class NotebookFile implements IFile {
   widget: NotebookPanel;
@@ -17,6 +18,13 @@ export class NotebookFile implements IFile {
   view: {
     left: number,
     top: number
+  }
+  cursor: {
+    index: number,
+    pos: {
+      line: number,
+      column: number
+    }
   }
 
   // TO DO (ashleyswang): decide how git path is passed into NotebookFile
@@ -58,8 +66,8 @@ export class NotebookFile implements IFile {
 
   async save() {
     try{
-      await this.context.save();
       const content = (this.content.model as NotebookModel).toJSON();
+      await this._saveFile(content);
       this.resolver.addVersion(content, 'base');
       console.log(this.path, 'saved');
     } catch (error) {
@@ -69,6 +77,7 @@ export class NotebookFile implements IFile {
 
   async reload() {
     console.log(this.path, 'reload start');
+    await this._getRemoteVersion():
     this._getLocalVersion();
     this._getEditorView();
     const merged = await this.resolver.mergeVersions();
@@ -77,25 +86,41 @@ export class NotebookFile implements IFile {
   }
 
   private async _displayText(merged) {
-    const pos = this.activeCell.editor.getCursorPosition();
-    this._addActiveVersion('local');
+    await this._saveFile(merged)
     await this.context.revert();
-    this._setEditorView(merged, pos);
+    this._setEditorView(merged);
   }
 
-  private _addActiveVersion(origin: 'base' | 'local' | 'remote'){
-    const activeText = (this.activeCell.editor as CodeMirrorEditor).editor.getValue();
-    this.cellResolver.addVersion(activeText, origin);
+  private async _saveFile(content: any){
+    const options = {
+      content: content,
+      format: 'json' as Contents.FileFormat,
+      path: this.path,
+      type: 'notebook' as Contents.ContentType,
+    }
+    await fs.save(this.path, options);
   }
 
   private async _getInitVersion() {
-    await this.resolver.sendInitRequest();
+    const contents = await fs.get(this.path);
+    this.resolver.addVersion(contents.content, 'base');
+    this.resolver.addVersion(contents.content, 'remote');
+    this.resolver.addVersion(contents.content, 'local');
+  }
+
+  private async _getRemoteVersion() {
+    try{
+      const contents = await fs.get(this.path);
+      console.log(contents);
+      this.resolver.addVersion(contents.content, 'remote');
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   private _getLocalVersion() {
     const content = (this.content.model as NotebookModel).toJSON();
     this.resolver.addVersion(content, 'local');
-    this._addActiveVersion('base')
   }
 
   private _getEditorView(){
@@ -108,19 +133,12 @@ export class NotebookFile implements IFile {
     this.resolver.setCursorToken(activeIndex, cursorPos);
   }
 
-  private _setEditorView(merged, pos){
-    if (merged.index !== undefined || merged.index !== null){
-      this.content.activeCellIndex = merged.index;
+  private _setEditorView(merged){
+    this.cursor = this.resolver.removeCursorToken();
 
-      this._addActiveVersion('remote');
-      const res = this.cellResolver.mergeVersions(pos);
-
-      if (res){
-        (this.activeCell.editor as CodeMirrorEditor).editor.setValue(res.text);
-        this.activeCell.editor.setCursorPosition(res.pos);
-      } else {
-        this.activeCell.editor.setCursorPosition(merged.pos);
-      }
+    if (this.cursor.index !== undefined || this.cursor.index !== null){
+      this.content.activeCellIndex = this.cursor.index;
+      this.activeCell.editor.setCursorPosition(this.cursor.pos);
     }
 
     this.content.node.scrollLeft = this.view.left;

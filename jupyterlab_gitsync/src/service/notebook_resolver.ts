@@ -2,7 +2,7 @@ import { CodeEditor } from '@jupyterlab/codeeditor';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISignal, Signal } from '@lumino/signaling';
 import { requestAPI } from './request_api';
-import { default as merge } from 'diff3';
+import { mergeNotebooks } from './nbmerge_api';
 
 import { IResolver } from './tracker';
 import { NotebookFile } from './notebook_file';
@@ -21,6 +21,7 @@ interface Versions {
   local: any;
   remote: any;
   local_tok: any;
+  merged: any;
 }
 
 export class NotebookResolver implements IResolver {
@@ -34,7 +35,8 @@ export class NotebookResolver implements IResolver {
     base: undefined,
     local: undefined,
     remote: undefined,
-    local_tok: undefined
+    local_tok: undefined,
+    merged: undefined
   };
 
   private _conflict: boolean;
@@ -79,61 +81,36 @@ export class NotebookResolver implements IResolver {
     this._versions.local_tok = json;
   }
 
+  private _removeCursorToken(input: any){
+    for (let i = 0; i < input.length; i++) {
+      if (input[i].indexOf(this._token) > -1) {
+        const index = i;
+        const text = input[i].split('\n');
+        for (let j = 0; j < text.length; j++){
+          if (text[i].indexOf(this._token) > -1) {
+            const line = j;
+            const column = text[i].indexOf(this._token);
+            this._cursor = { index: index, pos: {line: line, column: column} };
+          }
+        }
+      }
+    }
+    return input.replace(this._token, '');
+  }
+
   addVersion(content: any, origin: 'base' | 'local' | 'remote'): void {
     this._versions[origin] = content;
   }
 
-  async sendInitRequest(): Promise<any> {
-    const init: RequestInit = {
-      method: 'POST',
-      body: JSON.stringify({
-        path: this.file.git_path,
-        file_path: this.path,
-      }),
-    };
-
-    const response = await requestAPI('v1/nbinit', init);
-    if (response.success){
-      this._fpath = response.fpath;
-      this._dpath = response.dpath;
-    } else {
-      throw Error(response.error);
-    }
-  }
-
   async mergeVersions(): Promise<any> {
-    const response = await this._sendMergeRequest();
+    const result = mergeNotebooks(this.versions.base, this.versions.local_tok, this.versions.remote);
 
-    if (response.success) { 
-      const ret = {
-        index: response.index, 
-        pos: response.pos
-      } 
-      return ret;
-    } else if (response.conflict) { 
-      // TO DO (ashleyswang): return value for conflicts
+    if (result.conflict) { 
       await this._resolveConflicts();
-      return true; 
     } else { 
-      throw Error(response.error); 
-    }
-  }
-
-  private async _sendMergeRequest() {
-    const init: RequestInit = {
-      method: 'POST',
-      body: JSON.stringify({
-        path: this.file.git_path,
-        fpath: this._fpath,
-        dpath: this._dpath,
-        local: this.versions.local_tok,
-        base: this.versions.base,
-        token: this._token
-      }),
-    };
-
-    const response = await requestAPI('v1/nbmerge', init);
-    return response;
+      
+    } 
+    return this._versions.base;
   }
 
   private async _resolveConflicts() {
@@ -146,23 +123,6 @@ export class NotebookResolver implements IResolver {
       this._conflict = state;
       this._conflictState.emit(state);
     }
-  }
-
-  private async _sendResolveRequest(origin: 'local' | 'remote' | 'merged'){
-    const init: RequestInit = {
-      method: 'POST',
-      body: JSON.stringify({
-        path: this.file.git_path,
-        fpath: this._fpath,
-        dpath: this._dpath,
-        origin: origin, 
-        token: this._token
-      }),
-    };
-
-    const response = await requestAPI('v1/nbresolve', init);
-    if (response.success){ return true; }
-    else{ throw Error(response.error); }
   }
 
   private async _resolveDialog(): Promise<void> {

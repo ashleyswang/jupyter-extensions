@@ -58,8 +58,8 @@ export class File implements IFile {
 
   async save() {
     try{
-      await this.context.save();
       const text = this.doc.getValue();
+      await this._saveFile(text);
       this.resolver.addVersion(text, 'base');
     } catch (error) {
       console.warn(error);
@@ -75,6 +75,12 @@ export class File implements IFile {
   }
 
   private async _displayText(text: string) {
+    await this._saveFile(text);
+    await this.context.revert();
+    this._setEditorView();
+  }
+
+  private async _saveFile(text: string){
     const options = {
       content: text,
       format: 'text' as Contents.FileFormat,
@@ -82,8 +88,6 @@ export class File implements IFile {
       type: 'file' as Contents.ContentType,
     }
     await fs.save(this.path, options);
-    await this.context.revert();
-    this._setEditorView();
   }
 
   private async _getInitVersion() {

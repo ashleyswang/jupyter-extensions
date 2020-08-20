@@ -59,34 +59,61 @@ class NotebookMergeHandler(APIHandler):
   * notify caller of conflicts
   * if merge successful: update disk version to merged version
   """
-  def update_base(self, path, dpath):
-    assert subprocess.call(['cp', dpath+'/merged.ipynb', dpath+'/base.ipynb'], cwd=path) == 0, 'update base.ipynb failed'
+  def update_base(self, path, dpath, content):
+    if content:
+      file_path = path+'/'+dpath+'/base.ipynb'
+      with open(file_path, 'w+') as file:
+        json.dump(content, file, indent=2)
+    else:
+      assert subprocess.call(['cp', dpath+'/merged.ipynb', dpath+'/base.ipynb'], cwd=path) == 0, 'update base.ipynb failed'
 
-  def update_local(self, path, dpath, text):
+  def update_local(self, path, dpath, content):
     file_path = path+'/'+dpath+'/local.ipynb'
-    file = open(file_path, 'w+')
-    file.write(text)
-    file.close()
+    with open(file_path, 'w+') as file:
+      json.dump(content, file, indent=2)
 
   def update_remote(self, path, fpath, dpath):
     assert subprocess.call(['cp', fpath, dpath+'/remote.ipynb'], cwd=path) == 0, 'update remote.ipynb failed'
 
-  def update_cache_files(self, path, fpath, dpath, text):
-    self.update_base(path, dpath)
-    self.update_local(path, dpath, text)
+  def update_cache_files(self, path, fpath, dpath, local, base):
+    self.update_base(path, dpath, base)
+    self.update_local(path, dpath, local)
     self.update_remote(path, fpath, dpath)
 
   def merge_notebooks(self, path, dpath):
     dpath_abs = path+'/'+dpath
-    res = subprocess.check_output('nbmerge base.ipynb local.ipynb remote.ipynb > merged.ipynb', 
-      cwd=dpath_abs, shell=True)
+    res = subprocess.run('nbmerge base.ipynb local.ipynb remote.ipynb > merged.ipynb', 
+      cwd=dpath_abs, shell=True, capture_output=True)
+
     print(res)
-    if (res == b''):
+
+    if (res.returncode == 0):
       return True
-    elif (res == b'[W nbmergeapp:57] Conflicts occured during merge operation.'):
+    elif (res.returncode == 1 and res.stderr == b'[W nbmergeapp:57] Conflicts occured during merge operation.\n'):
       return False
     else:
       raise Exception('Nbmerge was unable to process files. Make sure files are .ipynb files.')
+
+  def remove_token(self, path, dpath, token):
+    file_path = path+'/'+dpath+'/merged.ipynb'
+    with open(file_path, 'r+') as file:
+      contents = json.loads(file.read())
+    
+    cell = [x for x in contents['cells'] if token+'\n' in x['source']][0]
+    index = contents['cells'].index(cell)
+    source = cell['source']
+    line = source.index(token+'\n')-1
+    column = len(source[line])-1
+    pos = {'line': line, 'column': column }
+
+    source.pop(line+1)
+    source[line] = source[line][:column]
+    if (source[line] == ''): source.pop(line)
+
+    with open(file_path, 'w+') as file: 
+      json.dump(contents, file, indent=2)
+
+    return index, pos
 
   def update_disk_file(self, path, fpath, dpath):
     assert subprocess.call(['cp', dpath+'/merged.ipynb', fpath], cwd=path) == 0, 'update {} failed'.format(fpath)
@@ -97,14 +124,17 @@ class NotebookMergeHandler(APIHandler):
     path = recv['path']
     fpath = recv['fpath']
     dpath = recv['dpath']
-    text = recv['text']
+    local = recv['local']
+    base = recv['base'] if recv['base'] else None
+    token = recv['token']
 
     try:
-      self.update_cache_files(path, fpath, dpath, text)
+      self.update_cache_files(path, fpath, dpath, local, base)
       merged = self.merge_notebooks(path, dpath)
+      index, pos = self.remove_token(path, dpath, token)
       if (merged): 
         self.update_disk_file(path, fpath, dpath)
-        self.finish({'success': True})
+        self.finish({'success': True, 'index': index, 'pos': pos})
       else:
         self.finish({'conflict': True})
     except Exception as e:
@@ -115,6 +145,14 @@ class NotebookResolveHandler(APIHandler):
   """ 
   Updates original .ipynb with user input file
   """
+  def remove_token(self, path, dpath, token):
+    file_path = path+'/'+dpath+'/local.ipynb'
+    with open(file_path, 'r+') as file:
+      text = file.read()
+      text = text.replace('\\n{}\\n'.format(token), '')
+    
+    with open(file_path, 'w+') as file:
+      file.write(text)
 
   def update_disk_file(self, path, fpath, dpath, origin):
     copy_file_path = dpath+'/'+origin+'.ipynb'
@@ -127,11 +165,11 @@ class NotebookResolveHandler(APIHandler):
     fpath = recv['fpath']
     dpath = recv['dpath']
     origin = recv['origin']
+    token = recv['token']
 
     try:
+      if (origin == 'local'): self.remove_token(path, dpath, token)
       self.update_disk_file(path, fpath, dpath, origin)
       self.finish({'success': True})
     except Exception as e:
       self.finish({'error': str(e)})
-
-

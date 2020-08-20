@@ -1,7 +1,8 @@
-import { CodeMirror } from 'codemirror';
+import { CodeEditor } from '@jupyterlab/codeeditor';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISignal, Signal } from '@lumino/signaling';
 import { requestAPI } from './request_api';
+import { default as merge } from 'diff3';
 
 import { IResolver } from './tracker';
 import { NotebookFile } from './notebook_file';
@@ -16,15 +17,16 @@ function token() {
 }
 
 interface Versions {
-  base: string;
-  local: string;
-  remote: string;
+  base: any;
+  local: any;
+  remote: any;
+  local_tok: any;
 }
 
 export class NotebookResolver implements IResolver {
   _file: NotebookFile;
   _token: string = token();
-  _cursor: CodeMirror.Pos;
+  _cursor: CodeEditor.IPosition;
   _fpath: string;
   _dpath: string;
 
@@ -32,6 +34,7 @@ export class NotebookResolver implements IResolver {
     base: undefined,
     local: undefined,
     remote: undefined,
+    local_tok: undefined
   };
 
   private _conflict: boolean;
@@ -61,8 +64,23 @@ export class NotebookResolver implements IResolver {
     return this._conflictState;
   }
 
-  addVersion(text: string, origin: 'base' | 'local' | 'remote'): void {
-    this._versions[origin] = text;
+  setCursorToken(index: number, pos: CodeEditor.IPosition) {
+    const json = this.versions.local;
+    const source = json.cells[index].source;
+    const text = source.split('\n');
+    let line = text[pos.line];
+
+    const before = line.slice(0, pos.column);
+    const after = line.slice(pos.column);
+    line = before + '\n' + this._token + '\n' + after;
+
+    text[pos.line] = line;
+    json.cells[index].source = text.join('\n')
+    this._versions.local_tok = json;
+  }
+
+  addVersion(content: any, origin: 'base' | 'local' | 'remote'): void {
+    this._versions[origin] = content;
   }
 
   async sendInitRequest(): Promise<any> {
@@ -86,9 +104,19 @@ export class NotebookResolver implements IResolver {
   async mergeVersions(): Promise<any> {
     const response = await this._sendMergeRequest();
 
-    if (response.success) { return true; }
-    else if (response.conflict) { await this._resolveConflicts(); } 
-    else { throw Error(response.error); }
+    if (response.success) { 
+      const ret = {
+        index: response.index, 
+        pos: response.pos
+      } 
+      return ret;
+    } else if (response.conflict) { 
+      // TO DO (ashleyswang): return value for conflicts
+      await this._resolveConflicts();
+      return true; 
+    } else { 
+      throw Error(response.error); 
+    }
   }
 
   private async _sendMergeRequest() {
@@ -98,7 +126,9 @@ export class NotebookResolver implements IResolver {
         path: this.file.git_path,
         fpath: this._fpath,
         dpath: this._dpath,
-        text: this.versions.local
+        local: this.versions.local_tok,
+        base: this.versions.base,
+        token: this._token
       }),
     };
 
@@ -125,12 +155,13 @@ export class NotebookResolver implements IResolver {
         path: this.file.git_path,
         fpath: this._fpath,
         dpath: this._dpath,
-        origin: origin
+        origin: origin, 
+        token: this._token
       }),
     };
 
     const response = await requestAPI('v1/nbresolve', init);
-    if (response.success){ return; }
+    if (response.success){ return true; }
     else{ throw Error(response.error); }
   }
 
@@ -168,3 +199,65 @@ export class NotebookResolver implements IResolver {
   }
 }
 
+interface IResult {
+  text: string,
+  pos: CodeEditor.IPosition,
+}
+export class TextResolver {
+ 
+  private _token = token();
+  private _versions: Versions = {
+    base: undefined,
+    local: undefined, 
+    remote: undefined, 
+    local_tok: undefined
+  }
+
+  addVersion(content: string, origin: 'base' | 'local' | 'remote'): void {
+    this._versions[origin] = content;
+  }
+
+  mergeVersions(pos: CodeEditor.IPosition): IResult {
+    if (this._versions.base == this._versions.local){
+      return undefined;
+    }
+    this._setCursorToken(pos);
+    const merged = merge(this._versions.remote, this._versions.base, this._versions.local_tok);
+    if (this._isConflict(merged)) {
+      return undefined;
+    } else {
+      return this._removeCursorToken(merged);
+    }
+  }
+
+  private _isConflict(merged): boolean {
+    return merged.length > 1 || !merged[0] || merged[0].conflict;
+  }
+
+  private _setCursorToken(pos: CodeEditor.IPosition): void {
+    const text = this._versions.local.split('\n');
+    let line = text[pos.line];
+
+    const before = line.slice(0, pos.column);
+    const after = line.slice(pos.column);
+    line = before + this._token + after;
+
+    text[pos.line] = line;
+    this._versions.local_tok = text.join('\n');
+  }
+
+  private _removeCursorToken(merged): IResult {
+    const text_tok = merged ? merged[0].ok.join('') : '';
+    const text_arr = text_tok.split('\n');
+    for (let i = 0; i < text_arr.length; i++) {
+      if (text_arr[i].indexOf(this._token) > -1) {
+        const line = i;
+        const column = text_arr[i].indexOf(this._token);
+        const pos = { line: line, column: column };
+        const text = text_tok.replace(this._token, '');
+        return {text: text, pos: pos};
+      }
+    }
+  }
+
+}

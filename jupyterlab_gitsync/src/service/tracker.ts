@@ -12,7 +12,7 @@ export interface IResolver {
   conflict: boolean;
   conflictState: ISignal<this, boolean>;
 
-  addVersion(text: string, origin: string): void;
+  addVersion(content: any, origin: string): void;
   mergeVersions(): Promise<any>;
 }
 
@@ -153,10 +153,5 @@ export class FileTracker {
       this.changed.push(sender);
       this._updateState('dirty', true);
     }
-  }
-
-  private _dirtyStateListener(sender: DocumentModel, args: any){
-    // TO DO (ashleyswang): add status indicator for dirty state
-    console.log(sender, args);
   }
 }

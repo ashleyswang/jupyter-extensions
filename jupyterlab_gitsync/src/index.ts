@@ -1,6 +1,5 @@
 // Ensure styles are loaded by webpack
 import '../style/index.css';
-
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
@@ -8,18 +7,19 @@ import {
 } from '@jupyterlab/application';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { IEditorTracker } from '@jupyterlab/fileeditor';
 
 import { FileTracker } from './service/tracker';
 import { GitManager } from './service/git';
 import { GitSyncService } from './service/service';
 import { GitSyncWidget } from './components/panel';
 
+import { File } from './service/file';
+import { DocumentWidget } from '@jupyterlab/docregistry';
+
 async function activate(
   app: JupyterFrontEnd,
   manager: IDocumentManager,
   shell: ILabShell,
-  editor: IEditorTracker
 ) {
   // TO DO (ashleyswang): add config method to determine path and options for git sync 
   // path requires no './' at beginning and no '/' at end for handler
@@ -42,7 +42,7 @@ async function activate(
  */
 const GitSyncPlugin: JupyterFrontEndPlugin<void> = {
   id: 'gitsync:gitsync',
-  requires: [IDocumentManager, ILabShell, IEditorTracker],
+  requires: [IDocumentManager, ILabShell],
   activate: activate,
   autoStart: true,
 };

@@ -89,16 +89,20 @@ export class FileResolver implements IResolver {
     return input.replace(this._token, '');
   }
 
-  addVersion(text: string, origin: 'base' | 'local' | 'remote' | 'local_tok'): void {
-    this._versions[origin] = text;
+  addVersion(content: string, origin: 'base' | 'local' | 'remote' | 'local_tok'): void {
+    this._versions[origin] = content;
   }
 
   async mergeVersions(): Promise<string> {
+    console.log(this.versions.base);
+    console.log(this.versions.local);
+    console.log(this.versions.remote);
     if (this.versions.local == this.versions.remote){
       this.addVersion(this.versions.local, 'base');
       return undefined;
     }
     const merged = merge(this.versions.remote, this.versions.base, this.versions.local_tok);
+    console.log(merged);
     if (this._isConflict(merged)) {
       await this._resolveConflicts(merged);
     } else {
@@ -119,42 +123,43 @@ export class FileResolver implements IResolver {
   }
 
   private async _resolveConflicts(merged): Promise<void> {
-    let resolved = true;
-    const result = merged.map(segment => {
-      if (segment.ok) return this._mergeResult(segment);
+    await this._resolveDialog();
+    // let resolved = true;
+    // const result = merged.map(segment => {
+    //   if (segment.ok) return this._mergeResult(segment);
 
-      const base = segment.conflict.o;
-      const remote = segment.conflict.a;
-      const local = segment.conflict.b;
+    //   const base = segment.conflict.o;
+    //   const remote = segment.conflict.a;
+    //   const local = segment.conflict.b;
 
-      const content = this._resolveFalseConflict(base, remote, local);
-      if (!content) resolved = false;
+    //   const content = this._resolveFalseConflict(base, remote, local);
+    //   if (!content) resolved = false;
 
-      return content ? content : segment;
-    });
+    //   return content ? content : segment;
+    // });
 
-    if (resolved) {
-      let text = result.join('');
-      text = this._removeCursorToken(text);
-      this.addVersion(text, 'base');
-    } else {
-      await this._resolveDialog(result);
-    }
+    // if (resolved) {
+    //   let text = result.join('');
+    //   text = this._removeCursorToken(text);
+    //   this.addVersion(text, 'base');
+    // } else {
+    //   await this._resolveDialog(result);
+    // }
   }
 
-  private _resolveFalseConflict(base, remote, local): string {
-    let ret = undefined;
-    const local_raw = local.replace(this._token, '');
+  // private _resolveFalseConflict(base, remote, local): string {
+  //   let ret = undefined;
+  //   const local_raw = local.replace(this._token, '');
 
-    if (base === '' &&(local_raw.startsWith(remote) || remote.startsWith(local_raw)))
-      ret = (local_raw.startsWith(remote) ? local_raw : remote).replace(local_raw, local);
-    else {
-      console.log(base);
-      console.log(local);
-      console.log(remote);
-    }
-    return ret;
-  }
+  //   if (base === '' &&(local_raw.startsWith(remote) || remote.startsWith(local_raw)))
+  //     ret = (local_raw.startsWith(remote) ? local_raw : remote).replace(local_raw, local);
+  //   else {
+  //     console.log(base);
+  //     console.log(local);
+  //     console.log(remote);
+  //   }
+  //   return ret;
+  // }
 
   private _updateState(state: boolean){
     if (state != this.conflict){
@@ -163,7 +168,7 @@ export class FileResolver implements IResolver {
     }
   }
 
-  private async _resolveDialog(result): Promise<void> {
+  private async _resolveDialog(): Promise<void> {
     const body = 
       `"${this.path}" has a conflict. Would you like to revert to a previous version?\
       \n(Note that ignoring conflicts will stop git sync.)`;
@@ -193,5 +198,4 @@ export class FileResolver implements IResolver {
       }
     });
   }
-
 }

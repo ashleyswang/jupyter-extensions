@@ -7,7 +7,6 @@ import {
 } from '@jupyterlab/application';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
-import { INotebookTracker } from '@jupyterlab/notebook';
 
 import { FileTracker } from './service/tracker';
 import { GitManager } from './service/git';
@@ -43,7 +42,7 @@ async function activate(
  */
 const GitSyncPlugin: JupyterFrontEndPlugin<void> = {
   id: 'gitsync:gitsync',
-  requires: [IDocumentManager, ILabShell, INotebookTracker],
+  requires: [IDocumentManager, ILabShell],
   activate: activate,
   autoStart: true,
 };

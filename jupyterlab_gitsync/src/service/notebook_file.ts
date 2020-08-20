@@ -2,14 +2,17 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { NotebookPanel, Notebook, NotebookModel } from '@jupyterlab/notebook';
 import { ISignal, Signal } from '@lumino/signaling';
 
+import { CodeMirrorEditor } from '@jupyterlab/codemirror';
+
 import { IFile } from './tracker';
-import { NotebookResolver } from './notebook_resolver';
+import { NotebookResolver, TextResolver } from './notebook_resolver';
 
 export class NotebookFile implements IFile {
   widget: NotebookPanel;
   content: Notebook;
   context: DocumentRegistry.Context;
   resolver: NotebookResolver;
+  cellResolver: TextResolver = new TextResolver();
   view: {
     left: number,
     top: number
@@ -33,6 +36,14 @@ export class NotebookFile implements IFile {
 
   get path(): string {
     return this.widget.context.path;
+  }
+
+  get activeCell() {
+    return this.content.activeCell;
+  }
+
+  get activeCellIndex(): number {
+    return this.content.activeCellIndex;
   }
 
   get conflictState(): ISignal<this, boolean> {
@@ -66,8 +77,15 @@ export class NotebookFile implements IFile {
   }
 
   private async _displayText(merged) {
+    const pos = this.activeCell.editor.getCursorPosition();
+    this._addActiveVersion('local');
     await this.context.revert();
-    this._setEditorView(merged);
+    this._setEditorView(merged, pos);
+  }
+
+  private _addActiveVersion(origin: 'base' | 'local' | 'remote'){
+    const activeText = (this.activeCell.editor as CodeMirrorEditor).editor.getValue();
+    this.cellResolver.addVersion(activeText, origin);
   }
 
   private async _getInitVersion() {
@@ -77,6 +95,7 @@ export class NotebookFile implements IFile {
   private _getLocalVersion() {
     const content = (this.content.model as NotebookModel).toJSON();
     this.resolver.addVersion(content, 'local');
+    this._addActiveVersion('base')
   }
 
   private _getEditorView(){
@@ -84,18 +103,24 @@ export class NotebookFile implements IFile {
       left: this.content.node.scrollLeft,
       top: this.content.node.scrollTop
     };
-    const activeIndex = this.content.activeCellIndex;
-    const cursorPos = this.content.activeCell.editor.getCursorPosition();
+    const activeIndex = this.activeCellIndex;
+    const cursorPos = this.activeCell.editor.getCursorPosition();
     this.resolver.setCursorToken(activeIndex, cursorPos);
   }
 
-  private _setEditorView(merged){
-    if (merged.index){
-      const index = merged.index;
-      const pos = merged.pos;
-      this.content.activeCellIndex = index;
-      const cell = this.content.activeCell;
-      cell.editor.setCursorPosition(pos);
+  private _setEditorView(merged, pos){
+    if (merged.index !== undefined || merged.index !== null){
+      this.content.activeCellIndex = merged.index;
+
+      this._addActiveVersion('remote');
+      const res = this.cellResolver.mergeVersions(pos);
+
+      if (res){
+        (this.activeCell.editor as CodeMirrorEditor).editor.setValue(res.text);
+        this.activeCell.editor.setCursorPosition(res.pos);
+      } else {
+        this.activeCell.editor.setCursorPosition(merged.pos);
+      }
     }
 
     this.content.node.scrollLeft = this.view.left;

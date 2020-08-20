@@ -22,9 +22,6 @@ def load_jupyter_server_extension(nb_server_app):
       app.settings['base_url'], 'jupyterlab_gitsync', 'v1')
     app.add_handlers(host_pattern, [
       (url_path_join(gcp_v1_endpoint, 'sync') + '(.*)', SyncHandler),
-      (url_path_join(gcp_v1_endpoint, 'setup') + '(.*)', SetupHandler),
-      (url_path_join(gcp_v1_endpoint, 'nbinit') + '(.*)', NotebookInitHandler),
-      (url_path_join(gcp_v1_endpoint, 'nbmerge') + '(.*)', NotebookMergeHandler),
-      (url_path_join(gcp_v1_endpoint, 'nbresolve') + '(.*)', NotebookResolveHandler)
+      (url_path_join(gcp_v1_endpoint, 'setup') + '(.*)', SetupHandler)
     ])
 

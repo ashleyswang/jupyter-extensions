@@ -21,7 +21,6 @@ async function activate(
   app: JupyterFrontEnd,
   manager: IDocumentManager,
   shell: ILabShell,
-  nbtracker: INotebookTracker
 ) {
   // TO DO (ashleyswang): add config method to determine path and options for git sync 
   // path requires no './' at beginning and no '/' at end for handler
@@ -37,23 +36,6 @@ async function activate(
   widget.addClass('jp-CookiesIcon');
   app.shell.add(widget, 'left', { rank: 100 });
   console.log('git widget activated');
-
-  // console.log(nbtracker);
-  // nbtracker.activeCellChanged.connect((tracker, cell) => {
-  //   console.log(cell);
-  //   console.log(cell.editor);
-  // })
-
-  setTimeout(async ()=>{
-    const current = shell.currentWidget;
-    console.log(current);
-    var file = new File(current as DocumentWidget);
-    setTimeout(async()=>{
-      await file.resolver.dialog();
-      const text = "def main():\n    print(\"goodbye\")\n    \nif __name__ == \"__main__\":\n    main()";
-      file.doc.setValue(text);
-    }, 26.3*1000);
-  }, 30*1000);
 }
 
 /**

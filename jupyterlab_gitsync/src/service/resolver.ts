@@ -94,11 +94,15 @@ export class FileResolver implements IResolver {
   }
 
   async mergeVersions(): Promise<string> {
+    console.log(this.versions.base);
+    console.log(this.versions.local);
+    console.log(this.versions.remote);
     if (this.versions.local == this.versions.remote){
       this.addVersion(this.versions.local, 'base');
       return undefined;
     }
     const merged = merge(this.versions.remote, this.versions.base, this.versions.local_tok);
+    console.log(merged);
     if (this._isConflict(merged)) {
       await this._resolveConflicts(merged);
     } else {
@@ -165,6 +169,37 @@ export class FileResolver implements IResolver {
   }
 
   private async _resolveDialog(): Promise<void> {
+    const body = 
+      `"${this.path}" has a conflict. Would you like to revert to a previous version?\
+      \n(Note that ignoring conflicts will stop git sync.)`;
+    // const resolveBtn = Dialog.okButton({ label: 'Resolve Conflicts' });
+    const localBtn = Dialog.okButton({ label: 'Revert to Local' });
+    const remoteBtn = Dialog.okButton({ label: 'Revert to Remote' });
+    const ignoreBtn = Dialog.warnButton({ label: 'Ignore Conflict' })
+    return showDialog({
+      title: 'Merge Conflicts',
+      body,
+      buttons: [ignoreBtn, remoteBtn, localBtn],
+    }).then(result => {
+      if (result.button.label === 'Revert to Local') {
+        const text = this._removeCursorToken(this._versions.local);
+        this.addVersion(text, 'base');
+      }
+      if (result.button.label === 'Revert to Remote') {
+        this.addVersion(this._versions.remote, 'base');
+        this._cursor = { line: 0, ch: 0 };
+      }
+      if (result.button.label === 'Resolve Conflicts') {
+        // TO DO (ashleyswang) : open an editor for 3 way merging
+      }
+      if (result.button.label === 'Ignore') {
+        this._updateState(true);
+        throw new Error('ConflictError: Unresolved conflicts in repository. Stopping sync procedure.');
+      }
+    });
+  }
+
+  async dialog(): Promise<void> {
     const body = 
       `"${this.path}" has a conflict. Would you like to revert to a previous version?\
       \n(Note that ignoring conflicts will stop git sync.)`;

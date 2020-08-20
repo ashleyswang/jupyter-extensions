@@ -1,6 +1,5 @@
 // Ensure styles are loaded by webpack
 import '../style/index.css';
-
 import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin,
@@ -14,6 +13,9 @@ import { FileTracker } from './service/tracker';
 import { GitManager } from './service/git';
 import { GitSyncService } from './service/service';
 import { GitSyncWidget } from './components/panel';
+
+import { File } from './service/file';
+import { DocumentWidget } from '@jupyterlab/docregistry';
 
 async function activate(
   app: JupyterFrontEnd,
@@ -41,6 +43,17 @@ async function activate(
   //   console.log(cell);
   //   console.log(cell.editor);
   // })
+
+  setTimeout(async ()=>{
+    const current = shell.currentWidget;
+    console.log(current);
+    var file = new File(current as DocumentWidget);
+    setTimeout(async()=>{
+      await file.resolver.dialog();
+      const text = "def main():\n    print(\"goodbye\")\n    \nif __name__ == \"__main__\":\n    main()";
+      file.doc.setValue(text);
+    }, 26.3*1000);
+  }, 30*1000);
 }
 
 /**

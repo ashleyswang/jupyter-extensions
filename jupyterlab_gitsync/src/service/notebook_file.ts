@@ -17,6 +17,7 @@ export class NotebookFile implements IFile {
     left: number,
     top: number
   }
+
   // TO DO (ashleyswang): decide how git path is passed into NotebookFile
   // needed for NotebookResolver handlers
   git_path: string = 'jupyterlab_gitsync/TEST';
@@ -70,10 +71,8 @@ export class NotebookFile implements IFile {
     this._getLocalVersion();
     this._getEditorView();
     const merged = await this.resolver.mergeVersions();
-    setTimeout(async()=>{
-      if (merged) { await this._displayText(merged); }
-      console.log(this.path, 'reload finish');
-    }, 5000); 
+    if (merged) { await this._displayText(merged); }
+    console.log(this.path, 'reload finish');
   }
 
   private async _displayText(merged) {
@@ -137,7 +136,6 @@ export class NotebookFile implements IFile {
   }
 
   private _addListeners() {
-    this._addListener((this.content
-      .model as NotebookModel).stateChanged, this._dirtyStateListener);
+    this._addListener((this.content.model as NotebookModel).stateChanged, this._dirtyStateListener);
   }
 }

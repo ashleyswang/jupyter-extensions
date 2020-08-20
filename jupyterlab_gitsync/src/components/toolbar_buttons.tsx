@@ -110,7 +110,7 @@ export class SaveButton extends React.Component<Props, {}> {
   }
 
   private _onClick(): void {
-    this.props.service.tracker.current.reload();
+    this.props.service.tracker.saveAll();
   }
 }
 

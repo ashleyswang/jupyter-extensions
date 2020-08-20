@@ -102,8 +102,7 @@ export class FileTracker {
 
   private _updateCurrent() {
     const current = this.shell.currentWidget;
-    if (false) { this._updateFiles(current as DocumentWidget); }
-    // if (current instanceof DocumentWidget){ this._updateFiles(current); }
+    if (current instanceof DocumentWidget){ this._updateFiles(current); }
   }
 
   private _updateFiles(widget: DocumentWidget) {

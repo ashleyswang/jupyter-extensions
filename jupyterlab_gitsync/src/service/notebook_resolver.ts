@@ -1,13 +1,12 @@
 import { CodeEditor } from '@jupyterlab/codeeditor';
 import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { ISignal, Signal } from '@lumino/signaling';
-import { requestAPI } from './request_api';
-import { mergeNotebooks } from './nbmerge_api';
+import { mergeNotebooks as nbmerge } from './nbmerge_api';
 
 import { IResolver } from './tracker';
 import { NotebookFile } from './notebook_file';
 
-function token() {
+function token(): string {
   let token = '';
   while (token.length < 32)
     token += Math.random()
@@ -22,21 +21,19 @@ interface Versions {
   remote: any;
   local_tok: any;
   merged: any;
+  merged_tok: string[][];
 }
 
 export class NotebookResolver implements IResolver {
-  _file: NotebookFile;
-  _token: string = token();
-  _cursor: CodeEditor.IPosition;
-  _fpath: string;
-  _dpath: string;
-
+  private _file: NotebookFile;
+  private _token: string = token();
   private _versions: Versions = {
     base: undefined,
     local: undefined,
     remote: undefined,
     local_tok: undefined,
-    merged: undefined
+    merged: undefined,
+    merged_tok: undefined
   };
 
   private _conflict: boolean;
@@ -66,7 +63,7 @@ export class NotebookResolver implements IResolver {
     return this._conflictState;
   }
 
-  setCursorToken(index: number, pos: CodeEditor.IPosition) {
+  setCursorToken(index: number, pos: CodeEditor.IPosition): void {
     const json = this.versions.local;
     const source = json.cells[index].source;
     const text = source.split('\n');
@@ -74,28 +71,31 @@ export class NotebookResolver implements IResolver {
 
     const before = line.slice(0, pos.column);
     const after = line.slice(pos.column);
-    line = before + '\n' + this._token + '\n' + after;
+    line = before + this._token + after;
 
     text[pos.line] = line;
     json.cells[index].source = text.join('\n')
     this._versions.local_tok = json;
   }
 
-  private _removeCursorToken(input: any){
-    for (let i = 0; i < input.length; i++) {
-      if (input[i].indexOf(this._token) > -1) {
-        const index = i;
-        const text = input[i].split('\n');
-        for (let j = 0; j < text.length; j++){
-          if (text[i].indexOf(this._token) > -1) {
-            const line = j;
-            const column = text[i].indexOf(this._token);
-            this._cursor = { index: index, pos: {line: line, column: column} };
+  getCursorToken(): {index: number, pos: CodeEditor.IPosition} {
+    if (this.versions.merged_tok){
+      const input = this.versions.merged_tok;
+      for (let i = 0; i < input.length; i++) {
+        if (input[i].join('').indexOf(this._token) > -1) {
+          const index = i;
+          const text = input[i];
+          for (let j = 0; j < text.length; j++){
+            if (text[j].indexOf(this._token) > -1) {
+              const line = j;
+              const column = text[j].indexOf(this._token);
+              return { index: index, pos: {line: line, column: column} };
+            }
           }
         }
       }
     }
-    return input.replace(this._token, '');
+    return undefined;
   }
 
   addVersion(content: any, origin: 'base' | 'local' | 'remote'): void {
@@ -103,19 +103,16 @@ export class NotebookResolver implements IResolver {
   }
 
   async mergeVersions(): Promise<any> {
-    const result = mergeNotebooks(this.versions.base, this.versions.local_tok, this.versions.remote);
+    const result = nbmerge(this.versions.base, this.versions.local_tok, this.versions.remote);
+    console.log(result);
 
-    if (result.conflict) { 
-      await this._resolveConflicts();
-    } else { 
-      
-    } 
-    return this._versions.base;
-  }
-
-  private async _resolveConflicts() {
-    // TO DO (ashleyswang): add 3 way merge conflict functionality
-    await this._resolveDialog();
+    let text = JSON.stringify(result.content).replace(this._token, '');
+    this._versions.merged_tok = result.source;
+    this._versions.merged = JSON.parse(text);
+    if (result.conflict) { await this._resolveDialog(); } 
+ 
+    this._updateState(false);
+    return this.versions.merged;
   }
 
   private _updateState(state: boolean){
@@ -132,7 +129,7 @@ export class NotebookResolver implements IResolver {
     // const resolveBtn = Dialog.okButton({ label: 'Resolve Conflicts' });
     const localBtn = Dialog.okButton({ label: 'Revert to Local' });
     const remoteBtn = Dialog.okButton({ label: 'Revert to Remote' });
-    const diffBtn = Dialog.okButton({ label: 'View Merged'})
+    const diffBtn = Dialog.okButton({ label: 'View Diff'})
     const ignoreBtn = Dialog.warnButton({ label: 'Ignore Conflict' })
     return showDialog({
       title: 'Merge Conflicts',
@@ -140,13 +137,15 @@ export class NotebookResolver implements IResolver {
       buttons: [ignoreBtn, remoteBtn, localBtn, diffBtn],
     }).then(async result => {
       if (result.button.label === 'Revert to Local') {
-        await this._sendResolveRequest('local');
+        this._versions.merged = this.versions.local;
+        this._versions.merged_tok = this.versions.local_tok;
       }
       if (result.button.label === 'Revert to Remote') {
-        await this._sendResolveRequest('remote')
+        this._versions.merged = this.versions.remote;
+        this._versions.merged_tok = undefined;
       } 
-      if (result.button.label === 'View Merged') {
-        await this._sendResolveRequest('merged')
+      if (result.button.label === 'View Diff') {
+        this._versions.merged_tok = undefined;
       }
       if (result.button.label === 'Resolve Conflicts') {
         // TO DO (ashleyswang) : open an editor for 3 way merging
@@ -157,67 +156,4 @@ export class NotebookResolver implements IResolver {
       }
     });
   }
-}
-
-interface IResult {
-  text: string,
-  pos: CodeEditor.IPosition,
-}
-export class TextResolver {
- 
-  private _token = token();
-  private _versions: Versions = {
-    base: undefined,
-    local: undefined, 
-    remote: undefined, 
-    local_tok: undefined
-  }
-
-  addVersion(content: string, origin: 'base' | 'local' | 'remote'): void {
-    this._versions[origin] = content;
-  }
-
-  mergeVersions(pos: CodeEditor.IPosition): IResult {
-    if (this._versions.base == this._versions.local){
-      return undefined;
-    }
-    this._setCursorToken(pos);
-    const merged = merge(this._versions.remote, this._versions.base, this._versions.local_tok);
-    if (this._isConflict(merged)) {
-      return undefined;
-    } else {
-      return this._removeCursorToken(merged);
-    }
-  }
-
-  private _isConflict(merged): boolean {
-    return merged.length > 1 || !merged[0] || merged[0].conflict;
-  }
-
-  private _setCursorToken(pos: CodeEditor.IPosition): void {
-    const text = this._versions.local.split('\n');
-    let line = text[pos.line];
-
-    const before = line.slice(0, pos.column);
-    const after = line.slice(pos.column);
-    line = before + this._token + after;
-
-    text[pos.line] = line;
-    this._versions.local_tok = text.join('\n');
-  }
-
-  private _removeCursorToken(merged): IResult {
-    const text_tok = merged ? merged[0].ok.join('') : '';
-    const text_arr = text_tok.split('\n');
-    for (let i = 0; i < text_arr.length; i++) {
-      if (text_arr[i].indexOf(this._token) > -1) {
-        const line = i;
-        const column = text_arr[i].indexOf(this._token);
-        const pos = { line: line, column: column };
-        const text = text_tok.replace(this._token, '');
-        return {text: text, pos: pos};
-      }
-    }
-  }
-
 }

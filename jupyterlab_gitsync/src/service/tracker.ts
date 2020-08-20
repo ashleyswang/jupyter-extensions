@@ -1,12 +1,7 @@
 import { ILabShell } from '@jupyterlab/application';
 import { ISignal, Signal } from '@lumino/signaling';
-<<<<<<< HEAD
 import { IDocumentWidget, DocumentWidget, DocumentRegistry } from '@jupyterlab/docregistry';
 import { NotebookPanel } from '@jupyterlab/notebook';
-=======
-import { IDocumentWidget } from '@jupyterlab/docregistry';
-import { ILabShell } from '@jupyterlab/application';
->>>>>>> add dynamic file path for renaming & fix bugs on scroll view update
 
 import { File } from './file';
 import { NotebookFile } from './notebook_file';
@@ -160,7 +155,4 @@ export class FileTracker {
     }
   }
 
-  private _dirtyStateListener(sender: DocumentModel, args: any){
-    console.log(sender, args);
-  }
 }

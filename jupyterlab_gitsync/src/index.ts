@@ -13,9 +13,6 @@ import { GitManager } from './service/git';
 import { GitSyncService } from './service/service';
 import { GitSyncWidget } from './components/panel';
 
-import { File } from './service/file';
-import { DocumentWidget } from '@jupyterlab/docregistry';
-
 async function activate(
   app: JupyterFrontEnd,
   manager: IDocumentManager,

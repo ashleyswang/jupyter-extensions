@@ -1,5 +1,4 @@
 import { DocumentWidget, DocumentRegistry, DocumentModel } from '@jupyterlab/docregistry';
-import { Contents } from '@jupyterlab/services'
 import { ISignal, Signal } from '@lumino/signaling';
 import { ContentsManager, Contents } from '@jupyterlab/services';
 
@@ -23,6 +22,10 @@ export class File implements IFile {
     top: number, 
     right: number,
     bottom: number 
+  }
+  cursor: {
+    line: number,
+    ch: number
   }
 
   private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
@@ -50,10 +53,6 @@ export class File implements IFile {
 
   get dirtyState(): ISignal<this, boolean> {
     return this._dirtyState;
-  }
-
-  get path() {
-    return this.widget.context.path;
   }
 
   async save() {
@@ -102,7 +101,7 @@ export class File implements IFile {
       const contents = await fs.get(this.path);
       this.resolver.addVersion(contents.content, 'remote');
     } catch (error) {
-      console.log(error);
+      console.warn(error);
     }
   }
 
@@ -112,8 +111,8 @@ export class File implements IFile {
   }
 
   private _getEditorView() {
-    const cursor = this.doc.getCursor();
-    this.resolver.setCursorToken(cursor);
+    this.cursor = this.doc.getCursor();
+    this.resolver.setCursorToken(this.cursor);
     const scroll = this.editor.getScrollInfo();
     this.view = {
       left: scroll.left, 
@@ -124,8 +123,8 @@ export class File implements IFile {
   }
 
   private _setEditorView() {
-    const cursor = this.resolver.cursor;
-    this.doc.setCursor(cursor);
+    this.cursor = this.resolver.getCursorToken();
+    this.doc.setCursor(this.cursor);
     this.editor.scrollIntoView(this.view);
   }
 

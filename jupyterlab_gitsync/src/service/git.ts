@@ -1,5 +1,4 @@
 import { requestAPI } from './request_api';
-import { ISignal, Signal } from '@lumino/signaling';
 
 /**
  *
@@ -10,61 +9,49 @@ import { ISignal, Signal } from '@lumino/signaling';
 
 export class GitManager {
   // Member Fields
-  private _path: string;
-  private _executablePath: string;
-  private _options: string[] = [];
-  private _fileConflicts: string[] = undefined;
-  private _syncCompleted: Signal<this, void> = new Signal<this, void>(this);
-  private _mergeConflict: Signal<this, void> = new Signal<this, void>(this);
-
-  constructor(path: string, options?: {remote: string, worktree:string}) {
-    this._setup(path);
-    if (options){
-      this._options[0] = options.remote;
-      this._options[1] = options.worktree;
-    }
-  }
+  private _path: string = undefined;
+  private _executablePath: string = undefined;
+  private _options: {remote: string, worktree: string} = undefined;
 
   get path(): string {
     return this._path;
   }
 
-  get fileConflicts(): string[] {
-    return this._fileConflicts;
+  get options(): {remote: string, worktree: string} {
+    return this._options;
   }
 
-  get syncCompleted(): ISignal<this, void> {
-    return this._syncCompleted;
-  }
+  async sync() {
+    if (this.path && this._executablePath){
+      const init: RequestInit = {
+        method: 'POST',
+        body: JSON.stringify({
+          path: this._path,
+          ex_path: this._executablePath,
+          options: [this.options.remote, this.options.worktree],
+        }),
+      };
 
-  get mergeConflict(): ISignal<this, void> {
-    return this._mergeConflict;
-  }
+      const response = await requestAPI('v1/sync', init);
 
-  async sync(args: string = null, emit = true) {
-    const init: RequestInit = {
-      method: 'POST',
-      body: JSON.stringify({
-        path: this._path,
-        ex_path: this._executablePath,
-        options: this._options,
-      }),
-    };
-
-    const response = await requestAPI('v1/sync', init);
-
-    if (response.success) {
-      return this._syncCompleted.emit();
-    } else if (response.conflict) {
-      // TO DO (ashleyswang): add logic for resolving conflicts during sync
-      // this._fileConflicts = response.conflict;
-      return this._mergeConflict.emit();
-    } else {
-      throw Error(response.error);
+      if (response.success) {
+        return;
+      } else if (response.conflict) {
+        // TO DO (ashleyswang): add logic for resolving conflicts during sync
+        // this._fileConflicts = response.conflict;
+        return;
+      } else {
+        throw Error(response.error);
+      }
     }
   }
 
-  private async _setup(path: string) {
+  async setup(path: string, remote?: string, worktree?: string) {
+    this._clearConfig();
+    if (remote && worktree){
+      this._options = {remote: remote, worktree: worktree};
+    }
+
     const init: RequestInit = {
       method: 'POST',
       body: JSON.stringify({ path: path }),
@@ -77,5 +64,12 @@ export class GitManager {
     } else {
       throw Error(response.error);
     }
+    console.log(this.path, this.options);
+  }
+
+  private _clearConfig() {
+    this._path = undefined;
+    this._executablePath = undefined;
+    this._options = {remote: undefined, worktree: undefined};
   }
 }

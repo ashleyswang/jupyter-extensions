@@ -1,6 +1,8 @@
+import { ILabShell } from '@jupyterlab/application';
+import { ISignal, Signal } from '@lumino/signaling';
 import { FileTracker } from './tracker';
 import { GitManager } from './git';
-import { ISignal, Signal } from '@lumino/signaling';
+
 
 /**
  *
@@ -22,9 +24,9 @@ export class GitSyncService {
   private _stateChange: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _statusChange: Signal<this, string> = new Signal<this, string>(this);
 
-  constructor(git: GitManager, tracker: FileTracker) {
-    this._git = git;
-    this._tracker = tracker;
+  constructor(shell: ILabShell) {
+    this._git = new GitManager();
+    this._tracker = new FileTracker(shell);
     this._addListeners();
   }
 

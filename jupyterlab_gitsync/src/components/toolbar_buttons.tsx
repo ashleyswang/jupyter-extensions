@@ -73,24 +73,105 @@ export class ControlButton extends React.Component<Props, ControlButtonState> {
   }
 }
 
-export class StatusButton extends React.Component<Props, {}> {
-  // TO DO (ashleyswang): add status button to show sync state of repo 
-  private readonly title = 'Save All Open Files';
-  private readonly style = style({ backgroundImage: 'var(--jp-icon-stop)' });
+interface StatusButtonState {
+  title: string;
+  style: string;
+  status: boolean;
+}
+
+export class StatusButton extends React.Component<Props, StatusButtonState> {
+  constructor(props) {
+    super(props);
+    this.state = {
+      title: 'All Files Up To Date',
+      style: style({ backgroundColor: 'green' }),
+      status: 'up-to-date',
+    };
+  }
+
+  componentDidMount() {
+    this._addListeners();
+  }
 
   render() {
+    const { title, style } = this.state;
     return (
       <ToolbarButton
-        title={this.title}
+        title={title}
         service={this.props.service}
-        style={this.style}
+        style={style}
         onClick={() => this._onClick()}
       />
     );
   }
 
   private _onClick(): void {
-    this.props.service.tracker.saveAll();
+    // TO DO (ashleyswang): onClick bring sync log to the front
+    return;
+  }
+
+  private _setUpToDateState(): void {
+    this.setState({
+      title: 'All Files Up To Date',
+      style: style({ backgroundColor: 'green'}),
+      status: 'up-to-date',
+    })
+  }
+
+  private _setSyncState(): void {
+    this.setState({
+      title: 'Syncing with Remote Repository',
+      style: style({ backgroundColor: 'lightblue'}),
+      status: 'sync',
+    })
+  }
+
+  private _setMergeState(): void {
+    this.setState({
+      title: 'Merging Local and Remote Versions',
+      style: style({ backgroundColor: 'blue'}),
+      status: 'merge',
+    })
+  }
+
+  private _setDirtyState(): void {
+    this.setState({
+      title: 'Files have Unsaved Changes',
+      style: style({ backgroundColor: 'yellow'}),
+      status: 'dirty',
+    })
+  }
+
+  private _setWarningState(): void {
+    this.setState({
+      title: 'An Error has Occurred',
+      style: style({ backgroundColor: 'red'}),
+      status: 'warning',
+    })
+  }
+
+  private _addListeners() {
+    this.props.service.statusChange.connect((_, status) => {
+      if (status != this.state.status){
+        switch (status) {
+          case 'up-to-date':
+            this._setWarningState();
+            break;
+          case 'sync':
+            this._setSyncState();
+            break;
+          case 'merge':
+            this._setMergeState();
+            break;
+          case 'dirty':
+            this._setDirtyState();
+            break;
+          case 'warning':
+            this._setWarningState();
+            break;
+        }
+      }
+    });
   }
 }
 

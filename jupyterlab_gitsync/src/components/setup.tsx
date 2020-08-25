@@ -1,5 +1,7 @@
 import * as React from 'react';
 // import { style } from 'typestyle';
+import DropdownButton from 'react-bootstrap/DropdownButton';
+import Dropdown from 'react-bootstrap/Dropdown';
 
 import { Props } from './panel';
 
@@ -8,6 +10,8 @@ interface GitSetupState {
   options?: any;
 }
 
+
+// if not collaborative just don't set remote and worktree
 export class GitSetup extends React.Component<Props, GitSetupState> {
   constructor(props) {
     super(props);
@@ -21,33 +25,64 @@ export class GitSetup extends React.Component<Props, GitSetupState> {
     this.props.service.git.setup('.');
   }
 
-  onSubmit = (event): void => {
-    event.preventDefault();
-    const remote = this.state.options.split(' ')[0];
-    const worktree = this.state.options.split(' ')[1];
-    this.props.service.git.setup(this.state.path, remote, worktree);
+  render(): React.ReactElement {
+    return(
+      <GitBranch service={this.props.service}/>
+    );
+  }  
+}
+
+interface GitBranchState {
+  currBranch: string;
+  branches: string[];
+}
+
+class GitBranch extends React.Component<Props, GitBranchState> {
+  constructor(props){
+    super(props);
+    this.state = {
+      currBranch: '        ',
+      branches: [],
+    }
   }
 
-  onPathChange = (event): void => {
-    this.setState({path: event.target.value});
-  }
-
-  onOptionsChange = (event): void => {
-    this.setState({options: event.target.value});
+  componentDidMount() {
+    this._addListeners();
   }
 
   render(): React.ReactElement {
     return(
-      <form onSubmit={this.onSubmit}>
-        <label> Working Repository:
-          <input type="text" value={this.state.path} onChange={this.onPathChange} />
-        </label>
-        <label> Remote / Worktree:
-          <input type="text" value={this.state.options} onChange={this.onOptionsChange} />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
+      <DropdownButton id='git-branch-dropdown' title={this.state.currBranch}>
+        <React.Fragment>
+          {this._renderBranches()}
+        </React.Fragment>
+      </DropdownButton>
     );
   }
-  
+
+  private _renderBranches() {
+    return this.state.branches.map((branch) => {
+      return (
+        <Dropdown.Item 
+          as="button" 
+          key={branch}
+          eventKey={branch}
+          onSelect={(key, event)=>this._onSelect(key, event)}
+        > {branch}
+        </Dropdown.Item>
+      )
+    });
+  }
+
+  private _onSelect(key, event){
+    this.setState({ currBranch: key });
+    this.props.service.git.currBranch = key;
+  }
+
+  private _addListeners() {
+    this.props.service.git.setupChange.connect(()=>{
+      this.setState({ branches: this.props.service.git.branches })
+    });
+  }
+
 }

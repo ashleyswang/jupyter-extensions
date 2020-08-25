@@ -5,13 +5,48 @@ import subprocess
 
 from notebook.base.handlers import APIHandler
 
+class BranchHandler(APIHandler):
+  """ 
+  Allows users to switch to an existing branch
+  or create and switch to a new branch
+  """
+  def create_branch(self, path, branch):
+    assert subprocess.call(['git', 'branch', branch], cwd=path) == 0, "Branch {} was not created".format(branch)
+
+  def change_branch(self, path, branch):
+    res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
+    curr = [x.decode("utf-8") for x in res.stdout.split() if (x!=b'*')][res.stdout.split().index(b'*')]
+    subprocess.call(['git', 'stash', 'save', 'jp-gitsync/'+curr])
+
+    assert subprocess.call(['git', 'checkout', branch], cwd=path) == 0, "Could not switch to branch {}".format(branch)
+    
+    res = subprocess.run(['git', 'stash', 'list'], cwd=path, capture_output=True)
+    if (res.stdout):
+      entry = [x.decode("utf-8") for x in res.stdout.splitlines() if (b'jp-gitsync/master' == x.split()[-1])][0]
+      entry = entry.split()[0].strip(':')
+      assert subprocess.call(['git', 'stash', 'pop', entry])
+
+  @gen.coroutine
+  def post(self, *args, **kwargs):
+    recv = self.get_json_body()
+    path = recv['path'] if recv['path'] else '.'
+    branch = recv['branch']
+    create = recv['create']
+
+    try: 
+      if (create):
+        self.create_branch(path, branch)
+      self.change_branch(path, branch)
+      self.finish({'success': True})
+    except Exception as e:
+      self.finish({'error': str(e)})
+
 class SyncHandler(APIHandler):
 
   """
   Implements all synchronization operations
   * uses git-sync-changes bash script
   """
-
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
@@ -47,6 +82,12 @@ class SetupHandler(APIHandler):
     ex_path = 'jupyterlab_gitsync/jupyterlab_gitsync/git-sync-changes/git-sync-changes'
     return os.path.join(cwd, ex_path)
 
+  def get_current_branch(self, path):
+    res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
+    branches = [x.decode("utf-8") for x in res.stdout.split() if (x!=b'*')]
+    curr_index = res.stdout.split().index(b'*')
+    return branches[curr_index], branches
+
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
@@ -54,8 +95,9 @@ class SetupHandler(APIHandler):
 
     try:
       if self.inside_git_repo(path):
+        curr_branch, branches = self.get_current_branch(path)
         ex_path = self.get_sync_path()
-        self.finish({'ex_path': ex_path})
+        self.finish({'ex_path': ex_path, 'curr_branch': curr_branch, 'branches': branches})
       else:
         self.finish({'error': 'Given path is not a git repository.'})
     except Exception as e:

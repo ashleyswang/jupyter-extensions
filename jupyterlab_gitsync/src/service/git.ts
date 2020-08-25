@@ -1,4 +1,5 @@
 import { requestAPI } from './request_api';
+import { ISignal, Signal } from '@lumino/signaling';
 
 /**
  *
@@ -9,16 +10,73 @@ import { requestAPI } from './request_api';
 
 export class GitManager {
   // Member Fields
-  private _path: string = undefined;
+  private _path: string = '.';
+  private _currBranch: string = undefined;
+  private _collab: boolean = false;
   private _executablePath: string = undefined;
-  private _options: {remote: string, worktree: string} = undefined;
+  private _branches: string[] = [];
+
+  private _setupChange: Signal<this, void> = new Signal<this, void>(this);
 
   get path(): string {
     return this._path;
   }
 
-  get options(): {remote: string, worktree: string} {
-    return this._options;
+  set path(path: string) {
+    if (path != this.path){ this.setup(path); }
+  }
+
+  get currBranch(): string {
+    return this._currBranch;
+  }
+
+  set currBranch(branch: string) {
+    if (branch != this.currBranch){
+      const create = (branch in this.branches);
+      this.change_branch(branch, create);
+    }
+  }
+
+  get collab(): boolean {
+    return this._collab;
+  }
+
+  set collab(collab: boolean) {
+    this._collab = collab;
+  }
+
+  get options(): string[] {
+    return (this.collab) ? ['origin', 'jp-shared/'+this.currBranch] : []
+  }
+
+  get branches(): string[] {
+    return this._branches;
+  }
+
+  get setupChange(): ISignal<this, void> {
+    return this._setupChange;
+  }
+
+  async change_branch(branch: string, create: boolean) {
+    if (this.path && this._executablePath){
+      const init: RequestInit = {
+        method: 'POST',
+        body: JSON.stringify({
+          path: this._path,
+          branch: branch, 
+          create: create
+        }),
+      };
+
+      const response = await requestAPI('v1/branch', init);
+
+      if (response.success) {
+        this._currBranch = branch
+        this._branches.push(branch);
+      } else {
+        throw Error(response.error);
+      }
+    }
   }
 
   async sync() {
@@ -28,7 +86,7 @@ export class GitManager {
         body: JSON.stringify({
           path: this._path,
           ex_path: this._executablePath,
-          options: [this.options.remote, this.options.worktree],
+          options: this.options,
         }),
       };
 
@@ -46,11 +104,8 @@ export class GitManager {
     }
   }
 
-  async setup(path: string, remote?: string, worktree?: string) {
+  async setup(path: string) {
     this._clearConfig();
-    if (remote && worktree){
-      this._options = {remote: remote, worktree: worktree};
-    }
 
     const init: RequestInit = {
       method: 'POST',
@@ -61,6 +116,10 @@ export class GitManager {
     if (response.ex_path) {
       this._path = path;
       this._executablePath = response.ex_path;
+      this._branches = response.branches;
+      this._currBranch = response.curr_branch;
+
+      this._setupChange.emit();
     } else {
       throw Error(response.error);
     }
@@ -70,6 +129,5 @@ export class GitManager {
   private _clearConfig() {
     this._path = undefined;
     this._executablePath = undefined;
-    this._options = {remote: undefined, worktree: undefined};
   }
 }

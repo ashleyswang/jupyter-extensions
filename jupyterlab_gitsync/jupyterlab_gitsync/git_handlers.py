@@ -11,20 +11,10 @@ class BranchHandler(APIHandler):
   or create and switch to a new branch
   """
   def create_branch(self, path, branch):
-    assert subprocess.call(['git', 'branch', branch], cwd=path) == 0, "Branch {} was not created".format(branch)
+    assert subprocess.call(['git', 'branch', branch], cwd=path) == 0, "Branch {} could not be created. Please check that the branch name does not exist.".format(branch)
 
   def change_branch(self, path, branch):
-    res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
-    curr = [x.decode("utf-8") for x in res.stdout.split() if (x!=b'*')][res.stdout.split().index(b'*')]
-    subprocess.call(['git', 'stash', 'save', 'jp-gitsync/'+curr])
-
-    assert subprocess.call(['git', 'checkout', branch], cwd=path) == 0, "Could not switch to branch {}".format(branch)
-    
-    res = subprocess.run(['git', 'stash', 'list'], cwd=path, capture_output=True)
-    if (res.stdout):
-      entry = [x.decode("utf-8") for x in res.stdout.splitlines() if (b'jp-gitsync/master' == x.split()[-1])][0]
-      entry = entry.split()[0].strip(':')
-      assert subprocess.call(['git', 'stash', 'pop', entry])
+    assert subprocess.call(['git', 'checkout', branch], cwd=path) == 0, "Could not switch to branch {}. Please commit or stash your changes and try again. ".format(branch)
 
   @gen.coroutine
   def post(self, *args, **kwargs):
@@ -47,17 +37,24 @@ class SyncHandler(APIHandler):
   Implements all synchronization operations
   * uses git-sync-changes bash script
   """
+  def get_current_branch(self, path):
+    res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
+    branches = [x.decode("utf-8") for x in res.stdout.split() if (x!=b'*')]
+    curr_index = res.stdout.split().index(b'*')
+    return branches[curr_index]
+
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
     path = recv['path'] if recv['path'] else '.'
     ex_path = recv['ex_path'] if recv['ex_path'] else ['git', 'sync-changes']
-    options = recv['options'] if recv['options'] else []
+    curr_branch = self.get_current_branch(path)
+    options = ['origin', 'jp-shared/'+curr_branch] if recv['collab'] else [] 
 
     try:
       return_code = subprocess.call([ex_path]+options, cwd=path)
       if return_code == 0:
-        self.finish({'success': True})
+        self.finish({'success': True, 'curr_branch': curr_branch})
       else:
         self.finish({'conflict': True})
     except Exception as e:

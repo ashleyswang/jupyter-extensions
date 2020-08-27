@@ -12,11 +12,11 @@ export class GitManager {
   // Member Fields
   private _path: string = '.';
   private _currBranch: string = undefined;
-  private _collab: boolean = false;
+  private _collab: boolean = true;
   private _executablePath: string = undefined;
   private _branches: string[] = [];
 
-  private _setupChange: Signal<this, void> = new Signal<this, void>(this);
+  private _setupChange: Signal<this, string> = new Signal<this, string>(this);
 
   get path(): string {
     return this._path;
@@ -53,11 +53,12 @@ export class GitManager {
     return this._branches;
   }
 
-  get setupChange(): ISignal<this, void> {
+  get setupChange(): ISignal<this, string> {
     return this._setupChange;
   }
 
   async change_branch(branch: string, create: boolean) {
+    this._setupChange.emit('start');
     if (this.path && this._executablePath){
       const init: RequestInit = {
         method: 'POST',
@@ -73,6 +74,7 @@ export class GitManager {
       if (response.success) {
         this._currBranch = branch
         this._branches.push(branch);
+        this._setupChange.emit('finish');
       } else {
         throw Error(response.error);
       }
@@ -86,14 +88,17 @@ export class GitManager {
         body: JSON.stringify({
           path: this._path,
           ex_path: this._executablePath,
-          options: this.options,
+          collab: this.collab,
         }),
       };
 
       const response = await requestAPI('v1/sync', init);
 
       if (response.success) {
-        return;
+        if (response.curr_branch !== this.currBranch){
+          this._currBranch = response.curr_branch;
+          this._setupChange.emit('change');
+        }
       } else if (response.conflict) {
         // TO DO (ashleyswang): add logic for resolving conflicts during sync
         // this._fileConflicts = response.conflict;
@@ -105,6 +110,7 @@ export class GitManager {
   }
 
   async setup(path: string) {
+    this._setupChange.emit('start');
     this._clearConfig();
 
     const init: RequestInit = {
@@ -119,7 +125,7 @@ export class GitManager {
       this._branches = response.branches;
       this._currBranch = response.curr_branch;
 
-      this._setupChange.emit();
+      this._setupChange.emit('finish');
     } else {
       throw Error(response.error);
     }

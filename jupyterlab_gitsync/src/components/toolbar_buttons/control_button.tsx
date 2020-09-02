@@ -17,15 +17,15 @@ export class ControlButton extends React.Component<Props, ControlButtonState> {
   constructor(props) {
     super(props);
     this.state = {
-      title: 'Pause Auto Sync',
-      icon: <PauseIcon fontSize='small'/>,
-      isRunning: true,
+      title: 'Start Auto Sync',
+      icon: <PlayArrowIcon fontSize='small'/>,
+      isRunning: false,
     };
   }
 
   componentDidMount() {
-    this.props.service.start();
     this._addListeners();
+    console.log('mounted control button');
   }
 
   render() {

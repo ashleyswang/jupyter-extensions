@@ -6,14 +6,12 @@ import {
   ILabShell,
 } from '@jupyterlab/application';
 
-import { IDocumentManager } from '@jupyterlab/docmanager';
-
 import { GitSyncService } from './service/service';
 import { GitSyncWidget } from './components/panel';
+import { ContentsManager, Contents } from '@jupyterlab/services';
 
 async function activate(
   app: JupyterFrontEnd,
-  manager: IDocumentManager,
   shell: ILabShell,
 ) {
   // TO DO (ashleyswang): add config method to determine path and options for git sync 
@@ -30,14 +28,24 @@ async function activate(
   widget.addClass('jp-CookiesIcon');
   app.shell.add(widget, 'left', { rank: 100 });
   console.log('git widget activated');
-}
 
+  const fs = new ContentsManager();
+  const options = {
+    type: 'directory' as Contents.ContentType,
+    content: true,
+  }
+
+  const x = (await fs.get('.', options)).content;
+  const dir = x.flatMap(file => (file.type === 'directory') ? [file] : []);
+  console.log(dir);
+
+}
 /**
  * The JupyterLab plugin.
  */
 const GitSyncPlugin: JupyterFrontEndPlugin<void> = {
   id: 'gitsync:gitsync',
-  requires: [IDocumentManager, ILabShell],
+  requires: [ILabShell],
   activate: activate,
   autoStart: true,
 };

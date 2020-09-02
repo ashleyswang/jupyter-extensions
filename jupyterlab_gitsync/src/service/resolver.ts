@@ -94,9 +94,6 @@ export class FileResolver implements IResolver {
   }
 
   async mergeVersions(): Promise<string> {
-    console.log(this.versions.base);
-    console.log(this.versions.local);
-    console.log(this.versions.remote);
     if (this.versions.local == this.versions.remote){
       this.addVersion(this.versions.local, 'base');
       return undefined;

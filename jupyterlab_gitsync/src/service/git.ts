@@ -11,30 +11,23 @@ import { ISignal, Signal } from '@lumino/signaling';
 export class GitManager {
   // Member Fields
   private _path: string = '.';
-  private _currBranch: string = undefined;
+  private _branch: string = undefined;
   private _collab: boolean = true;
   private _executablePath: string = undefined;
   private _branches: string[] = [];
 
   private _setupChange: Signal<this, string> = new Signal<this, string>(this);
 
+  constructor(){
+    this.setup('.');
+  }
+
   get path(): string {
     return this._path;
   }
 
-  set path(path: string) {
-    if (path != this.path){ this.setup(path); }
-  }
-
-  get currBranch(): string {
-    return this._currBranch;
-  }
-
-  set currBranch(branch: string) {
-    if (branch != this.currBranch){
-      const create = (branch in this.branches);
-      this.change_branch(branch, create);
-    }
+  get branch(): string {
+    return this._branch;
   }
 
   get collab(): boolean {
@@ -46,7 +39,7 @@ export class GitManager {
   }
 
   get options(): string[] {
-    return (this.collab) ? ['origin', 'jp-shared/'+this.currBranch] : []
+    return (this.collab) ? ['origin', 'jp-shared/'+this.branch] : []
   }
 
   get branches(): string[] {
@@ -57,7 +50,8 @@ export class GitManager {
     return this._setupChange;
   }
 
-  async change_branch(branch: string, create: boolean) {
+  async changeBranch(branch: string) {
+    const create = (branch in this.branches);
     this._setupChange.emit('start');
     if (this.path && this._executablePath){
       const init: RequestInit = {
@@ -72,10 +66,11 @@ export class GitManager {
       const response = await requestAPI('v1/branch', init);
 
       if (response.success) {
-        this._currBranch = branch
+        this._branch = branch
         this._branches.push(branch);
         this._setupChange.emit('finish');
       } else {
+        this._setupChange.emit('finish');
         throw Error(response.error);
       }
     }
@@ -95,8 +90,8 @@ export class GitManager {
       const response = await requestAPI('v1/sync', init);
 
       if (response.success) {
-        if (response.curr_branch !== this.currBranch){
-          this._currBranch = response.curr_branch;
+        if (response.curr_branch !== this.branch){
+          this._branch = response.curr_branch;
           this._setupChange.emit('change');
         }
       } else if (response.conflict) {
@@ -110,6 +105,7 @@ export class GitManager {
   }
 
   async setup(path: string) {
+    console.log('start setup');
     this._setupChange.emit('start');
     this._clearConfig();
 
@@ -123,13 +119,14 @@ export class GitManager {
       this._path = path;
       this._executablePath = response.ex_path;
       this._branches = response.branches;
-      this._currBranch = response.curr_branch;
+      this._branch = response.curr_branch;
 
       this._setupChange.emit('finish');
     } else {
+      this._setupChange.emit('finish');
       throw Error(response.error);
     }
-    console.log(this.path, this.options);
+    console.log(this.path, this.branch, this.branches, this.options);
   }
 
   private _clearConfig() {

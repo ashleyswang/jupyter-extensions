@@ -32,6 +32,7 @@ export class GitBranchSetup extends React.Component<Props, GitBranchState> {
 
   componentDidMount() {
     this._addListeners();
+    this._setBranches();
   }
 
   render(): React.ReactElement {
@@ -62,7 +63,7 @@ export class GitBranchSetup extends React.Component<Props, GitBranchState> {
 
   private _onChange(event){
     this.setState({ currBranch: event.target.value });
-    this.props.service.git.currBranch = event.target.value;
+    this.props.service.setup(null, event.target.value);
   }
 
   /* Only allow branch changes if we have successfully set up a git path */
@@ -70,13 +71,22 @@ export class GitBranchSetup extends React.Component<Props, GitBranchState> {
   private _addListeners() {
     this.props.service.git.setupChange.connect((_, status)=>{
       if (status === 'start' && !this.state.disabled) this.setState({ disabled: true });
-      else if (status === 'finish' && this.state.disabled) {
+      else if (status === 'finish') {
         this.setState({ 
           disabled: false,
-          currBranch: this.props.service.git.currBranch,
+          currBranch: this.props.service.git.branch,
           branches: this.props.service.git.branches,
         });
-      } else if (status === 'change') this.setState({ currBranch: this.props.service.git.currBranch });
+      } else if (status === 'change') this.setState({ currBranch: this.props.service.git.branch });
     });
+  }
+
+  private _setBranches() {
+    setTimeout(()=>{
+      this.setState({
+        currBranch: this.props.service.git.branch,
+        branches: this.props.service.git.branches,
+      });
+    }, 2000);
   }
 }

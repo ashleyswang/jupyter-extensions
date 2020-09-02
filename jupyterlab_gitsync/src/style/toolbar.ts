@@ -2,7 +2,7 @@ import { style } from 'typestyle';
 
 export const toolbarClass = style({
   justifyContent: 'space-evenly',
-  height: 'var(--jp-private-toolbar-height)',
+  height: '5%',
 });
 
 export const toolbarItemClass = style({

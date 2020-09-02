@@ -8,15 +8,18 @@ import {
   setupItemInnerClass,
 } from '../../style/setup';
 
-import FormControl from "@material-ui/core/FormControl";
-import FormHelperText from "@material-ui/core/FormHelperText";
-import Input from '@material-ui/core/Input';
-
+import { ContentsManager, Contents } from '@jupyterlab/services';
+const fs = new ContentsManager();ß
 
 interface GitPathState {
   disabled: boolean;
   path: string;
   value: string;
+}
+
+interface DirectoryItem {
+  parent: DirectoryItem,
+  children: any[],
 }
 
 export class GitPathSetup extends React.Component<Props, GitPathState> {
@@ -49,6 +52,17 @@ export class GitPathSetup extends React.Component<Props, GitPathState> {
         <FormHelperText>Repository </FormHelperText>
       </FormControl>
     );
+  }
+
+  private async _getFileMapping(path: string) {
+    const options = {
+      type: 'directory' as Contents.ContentType,
+      content: true,
+    }
+
+    const content = (await fs.get(path, options)).content;
+    const dir = content.flatMap(file => (file.type === 'directory') ? [file] : []);
+    return dir;
   }
 
   private _onChange(event) {

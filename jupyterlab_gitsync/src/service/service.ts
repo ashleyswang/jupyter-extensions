@@ -22,30 +22,14 @@ export class GitSyncService {
   private _status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning';
   private _blocked: boolean = false;
   private _stateChange: Signal<this, boolean> = new Signal<this, boolean>(this);
-  private _statusChange: Signal<this, string> = new Signal<this, string>(this);
+  private _statusChange: Signal<this, any> = new Signal<this, any>(this);
+  private _setupChange: Signal<this, any> = new Signal<this, any>(this);
 
   constructor(shell: ILabShell) {
     this._git = new GitManager();
     this._tracker = new FileTracker(shell);
     this._addListeners();
-  }
-
-  start() {
-    if (!this._blocked && !this.running){
-      console.log('start git sync service');
-      this._running = true;
-      this._run();
-      this._stateChange.emit(this.running);
-    }
-  }
-
-  stop() {
-    if (!this._blocked && this.running){
-      this._running = false;
-      this._stateChange.emit(this.running);
-      console.log('stop git sync service');
-    }
-  }
+  } 
 
   get running(): boolean {
     return this._running;
@@ -71,14 +55,59 @@ export class GitSyncService {
     return this._stateChange;
   }
 
-  get statusChange(): ISignal<this, string> {
+  get statusChange(): ISignal<this, any> {
     return this._statusChange;
   }
 
-  private _updateStatus(status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning'){
+  get setupChange(): ISignal<this, any> {
+    return this._setupChange;
+  }
+
+  start() {
+    if (!this._blocked && !this.running){
+      console.log('start git sync service');
+      this._running = true;
+      this._run();
+      this._stateChange.emit(this.running);
+    }
+  }
+
+  stop() {
+    if (!this._blocked && this.running){
+      this._running = false;
+      this._stateChange.emit(this.running);
+      console.log('stop git sync service');
+    }
+  }
+
+  async setup(path?: string, branch?: string){
+    try{
+      if (path && path !== this.git.path) { 
+        await this.git.setup(path);
+        this._setupChange.emit({
+          status: 'success', 
+          value: `Changed repository path to "${this.git.path}". Current checked-out branch is "${this.git.branch}".`
+        });
+      }
+      if (branch && branch !== this.git.branch) {
+        await this.git.changeBranch(branch);
+        this._setupChange.emit({
+          status: 'success', 
+          value: `Checked-out to branch "${this.git.branch}".`
+        });
+      }
+    } catch (error) {
+      this._setupChange.emit({status: 'error', value: error.toString()});
+    }
+  }
+
+  private _updateStatus(status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning', error?: string){
     if (status != this.status){
       this._status = status;
-      this._statusChange.emit(status);
+      this._statusChange.emit({
+        status: status,
+        error: error
+      });
     }
   }
 
@@ -95,7 +124,7 @@ export class GitSyncService {
           this._updateStatus('up-to-date');
         } catch (error) {
           console.warn(error);
-          this._updateStatus('warning')
+          this._updateStatus('warning', error.toString())
         }
         this._completed = true; 
         this._run();

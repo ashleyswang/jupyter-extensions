@@ -70,7 +70,11 @@ export class File implements IFile {
     this._getLocalVersion();
     this._getEditorView();
     const text = await this.resolver.mergeVersions();
-    if (text) { await this._displayText(text); }
+    if (text) { 
+      await this._displayText(text); 
+    } 
+    ((this.widget.content as FileEditor)
+      .model as DocumentModel).dirty = false;
   }
 
   private async _displayText(text: string) {
@@ -147,6 +151,7 @@ export class File implements IFile {
   }
 
   private _dirtyStateListener(sender: DocumentModel, value: any){
+    console.log(this.path, value);
     if (value.name === 'dirty'){ this._dirtyState.emit(value.newValue); }
   }
 

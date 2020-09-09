@@ -67,7 +67,7 @@ export class GitManager {
 
       if (response.success) {
         this._branch = branch
-        this._branches.push(branch);
+        if (create) this._branches.push(branch);
         this._setupChange.emit('finish');
       } else {
         this._setupChange.emit('finish');
@@ -94,10 +94,6 @@ export class GitManager {
           this._branch = response.curr_branch;
           this._setupChange.emit('change');
         }
-      } else if (response.conflict) {
-        // TO DO (ashleyswang): add logic for resolving conflicts during sync
-        // this._fileConflicts = response.conflict;
-        return;
       } else {
         throw Error(response.error);
       }

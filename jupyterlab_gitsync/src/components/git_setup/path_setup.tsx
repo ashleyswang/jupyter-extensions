@@ -11,6 +11,9 @@ import {
 import FormControl from "@material-ui/core/FormControl";
 import FormHelperText from "@material-ui/core/FormHelperText";
 import Input from '@material-ui/core/Input';
+import IconButton from '@material-ui/core/IconButton';
+import SendIcon from '@material-ui/icons/Send';
+import Grid from "@material-ui/core/Grid";
 
 
 interface GitPathState {
@@ -31,7 +34,7 @@ export class GitPathSetup extends React.Component<Props, GitPathState> {
 
   componentDidMount() {
     this._addListeners();
-    console.log('mounted path');
+    this.props.service.setup(this.state.path);
   }
 
   render(): React.ReactElement {
@@ -40,13 +43,26 @@ export class GitPathSetup extends React.Component<Props, GitPathState> {
         className={classes(setupItemClass)}
         disabled={this.state.disabled} 
       >
-        <Input 
-          className={classes(setupItemInnerClass)}
-          value={this.state.value} 
-          onChange={(event) => this._onChange(event)} 
-          onBlur={() => this._updatePath()}
-        />
-        <FormHelperText>Repository </FormHelperText>
+        <Grid container className={classes(setupItemInnerClass)}>
+          <Grid item xs>
+            <Input 
+              value={this.state.value} 
+              onChange={(event) => this._onChange(event)} 
+              onKeyDown={(event) => this._onKeyDown(event)}
+              style={{width: "85%"}}
+            />
+          </Grid>
+          <Grid item>
+            <IconButton
+              onClick={() => this._onClick()}
+              style={{position: "absolute", right: "0px"}}
+              disabled={this.state.disabled}
+            >
+              <SendIcon fontSize='small'/>
+            </IconButton>
+          </Grid>
+        </Grid>
+      <FormHelperText>Repository </FormHelperText>
       </FormControl>
     );
   }
@@ -55,9 +71,15 @@ export class GitPathSetup extends React.Component<Props, GitPathState> {
     this.setState({ value: event.target.value });
   }
 
-  private _updatePath() {
+  private _onKeyDown(event) {
+    if (event.keyCode === 13)
+      this._onClick();
+  }
+
+  private _onClick() {
     this.setState({ path: this.state.value });
-    this.props.service.setup(this.state.path);
+    this.props.service.setup(this.state.value);
+    console.log(this.state.value);
   }
 
   /* Only allow path changes when the service is not running */

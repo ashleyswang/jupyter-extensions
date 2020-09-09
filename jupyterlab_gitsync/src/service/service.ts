@@ -19,7 +19,7 @@ export class GitSyncService {
   private _running: boolean;
   syncInterval: number = 10 * 1000;
 
-  private _status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning';
+  private _status: 'sync' | 'merge' | 'up-to-date' | 'dirty' | 'warning' = 'up-to-date';
   private _blocked: boolean = false;
   private _stateChange: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _statusChange: Signal<this, any> = new Signal<this, any>(this);
@@ -111,21 +111,25 @@ export class GitSyncService {
     }
   }
 
+  async sync(): Promise<void>{
+    try{
+      await this.tracker.saveAll();
+      this._updateStatus('sync')
+      await this.git.sync();
+      this._updateStatus('merge')
+      await this.tracker.reloadAll();
+      this._updateStatus('up-to-date');
+    } catch (error) {
+      console.warn(error);
+      this._updateStatus('warning', error.toString())
+    }
+  }
+
   private async _run(): Promise<void> {
     if (this.running && this.completed){
       this._completed = false;
       setTimeout(async () => {
-        try{
-          await this.tracker.saveAll();
-          this._updateStatus('sync')
-          await this.git.sync();
-          this._updateStatus('merge')
-          await this.tracker.reloadAll();
-          this._updateStatus('up-to-date');
-        } catch (error) {
-          console.warn(error);
-          this._updateStatus('warning', error.toString())
-        }
+        await this.sync();
         this._completed = true; 
         this._run();
       }, this.syncInterval);

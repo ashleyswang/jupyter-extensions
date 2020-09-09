@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { classes } from 'typestyle';
+import { animateScroll } from "react-scroll";
 
 import { 
   logDisplayClass,
@@ -23,7 +24,6 @@ interface SyncLogState {
 }
 
 export class SyncLog extends React.Component<Props, SyncLogState> {
-  readonly logEndRef = React.createRef<HTMLDivElement>();
 
   constructor(props) {
     super(props);
@@ -41,17 +41,20 @@ export class SyncLog extends React.Component<Props, SyncLogState> {
   }
 
   private _scrollToBottom() {
-    this.logEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    animateScroll.scrollToBottom({
+      containerId: "GitSyncLog",
+      duration: 500
+    });
   }
 
   render(): React.ReactElement {
     return(
-      <List className={classes(logDisplayClass)}>
+      <List id="GitSyncLog" className={classes(logDisplayClass)}>
         {this._renderEntries()}
-        <div ref={this.logEndRef} />
       </List>
     );
   }
+
 
   private _renderEntries(){
     return this.state.entries.map((entry, index) => {
@@ -117,6 +120,23 @@ export class SyncLog extends React.Component<Props, SyncLogState> {
         date: new Date(),
         value: value.value,
       })
+      this.setState({ entries: entries });
+    });
+
+    this.props.service.stateChange.connect((_, running) => {
+      let entries = this.state.entries;
+      if (running){
+        entries.push({
+          date: new Date(),
+          value: 'Starting sync with git repository.',
+        });
+      }
+      else if (!running){
+        entries.push({
+          date: new Date(),
+          value: 'Stopping sync service.',
+        });
+      }
       this.setState({ entries: entries });
     });
   }

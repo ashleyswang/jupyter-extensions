@@ -39,22 +39,12 @@ export class FileTracker {
   conflict: boolean;
   dirty: boolean;
 
-  private _saveCompleted: Signal<this, void> = new Signal<this, void>(this);
-  private _reloadCompleted: Signal<this, void> = new Signal<this, void>(this);
   private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _dirtyState: Signal<this, boolean> = new Signal<this, boolean>(this);
 
   constructor(shell: ILabShell) {
     this.shell = shell;
     this._addListener(this.shell.currentChanged, this._updateCurrent);
-  }
-
-  get saveCompleted(): ISignal<this, void> {
-    return this._saveCompleted;
-  }
-
-  get reloadCompleted(): ISignal<this, void> {
-    return this._reloadCompleted;
   }
 
   get conflictState(): ISignal<this, boolean> {
@@ -70,7 +60,6 @@ export class FileTracker {
       return await file.save();
     });
     await Promise.all(promises);
-    return this._saveCompleted.emit();
   }
 
   async reloadAll() {
@@ -78,7 +67,6 @@ export class FileTracker {
       return await file.reload();
     });
     await Promise.all(promises);
-    return this._reloadCompleted.emit();
   }
 
   private _addListener(signal: ISignal<any, any>, callback: any){

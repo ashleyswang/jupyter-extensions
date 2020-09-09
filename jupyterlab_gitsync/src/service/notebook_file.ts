@@ -74,10 +74,11 @@ export class NotebookFile implements IFile {
     this._getEditorView();
     const merged = await this.resolver.mergeVersions();
     if (merged) { await this._displayText(merged); }
+    (this.content.model as NotebookModel).dirty = false;
   }
 
   private async _displayText(merged) {
-    await this._saveFile(merged)
+    await this._saveFile(merged);
     await this.context.revert();
     this._setEditorView();
   }

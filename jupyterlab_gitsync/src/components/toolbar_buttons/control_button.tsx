@@ -25,7 +25,6 @@ export class ControlButton extends React.Component<Props, ControlButtonState> {
 
   componentDidMount() {
     this._addListeners();
-    console.log('mounted control button');
   }
 
   render() {

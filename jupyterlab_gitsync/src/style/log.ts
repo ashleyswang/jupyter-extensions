@@ -2,7 +2,7 @@ import { style } from 'typestyle';
 
 export const logDisplayClass = style({
   width: '100%',
-  height: '74%',
+  height: '72%',
   overflow: 'scroll',
 });
 

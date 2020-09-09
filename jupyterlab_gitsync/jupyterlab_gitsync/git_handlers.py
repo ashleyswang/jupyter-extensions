@@ -43,6 +43,10 @@ class SyncHandler(APIHandler):
     curr_index = res.stdout.split().index(b'*')
     return branches[curr_index]
 
+  def sync_repo(self, path, ex_path, options):
+    res = subprocess.run([ex_path]+options, cwd=path, capture_output=True)
+    assert res.returncode == 0, "SyncError: " + res.stderr.decode("utf-8")
+
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
@@ -52,11 +56,8 @@ class SyncHandler(APIHandler):
     options = ['origin', 'jp-shared/'+curr_branch] if recv['collab'] else [] 
 
     try:
-      return_code = subprocess.call([ex_path]+options, cwd=path)
-      if return_code == 0:
-        self.finish({'success': True, 'curr_branch': curr_branch})
-      else:
-        self.finish({'conflict': True})
+      self.sync_repo(path, ex_path, options)
+      self.finish({'success': True, 'curr_branch': curr_branch})
     except Exception as e:
       self.finish({'error': str(e)})
 

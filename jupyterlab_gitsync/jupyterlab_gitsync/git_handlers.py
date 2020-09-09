@@ -51,7 +51,8 @@ class SyncHandler(APIHandler):
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
     path = recv['path'] if recv['path'] else '.'
-    ex_path = recv['ex_path'] if recv['ex_path'] else ['git', 'sync-changes']
+    # ex_path = recv['ex_path'] if recv['ex_path'] else ['git', 'sync-changes']
+    ex_path = ['git', 'sync-changes']
     curr_branch = self.get_current_branch(path)
     options = ['origin', 'jp-shared/'+curr_branch] if recv['collab'] else [] 
 

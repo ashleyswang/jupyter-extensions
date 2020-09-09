@@ -89,19 +89,13 @@ export class SyncLog extends React.Component<Props, SyncLogState> {
         case 'sync':
           entries.push({
             date: new Date(),
-            value: 'Saved local changes.'
-          })
-          break;
-        case 'merge':
-          entries.push({
-            date: new Date(),
-            value: 'Synced with remote repository.'
+            value: 'Saved local changes. Syncing...'
           })
           break;
         case 'up-to-date':
           entries.push({
             date: new Date(),
-            value: 'Successfully merged changes.'
+            value: 'Synced and merged changes from remote repository.'
           })
           break;
         case 'warning':

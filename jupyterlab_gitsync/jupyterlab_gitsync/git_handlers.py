@@ -43,8 +43,8 @@ class SyncHandler(APIHandler):
     curr_index = res.stdout.split().index(b'*')
     return branches[curr_index]
 
-  def sync_repo(self, path, ex_path, options):
-    res = subprocess.run([ex_path]+options, cwd=path, capture_output=True)
+  def sync_repo(self, path, options):
+    res = subprocess.run(['git', 'sync-changes']+options, cwd=path, capture_output=True)
     assert res.returncode == 0, "SyncError: " + res.stderr.decode("utf-8")
 
   @gen.coroutine
@@ -52,12 +52,11 @@ class SyncHandler(APIHandler):
     recv = self.get_json_body()
     path = recv['path'] if recv['path'] else '.'
     # ex_path = recv['ex_path'] if recv['ex_path'] else ['git', 'sync-changes']
-    ex_path = ['git', 'sync-changes']
     curr_branch = self.get_current_branch(path)
     options = ['origin', 'jp-shared/'+curr_branch] if recv['collab'] else [] 
 
     try:
-      self.sync_repo(path, ex_path, options)
+      self.sync_repo(path, options)
       self.finish({'success': True, 'curr_branch': curr_branch})
     except Exception as e:
       self.finish({'error': str(e)})

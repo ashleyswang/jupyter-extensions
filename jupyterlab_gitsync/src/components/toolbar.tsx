@@ -31,9 +31,9 @@ export class Toolbar extends React.Component<Props> {
   render(): React.ReactElement {
     return (
       <div className={classes('jp-Toolbar', toolbarClass)}>
+        <StatusButton service={this.props.service} />
         <ControlButton service={this.props.service} />
         <SyncButton service={this.props.service} />
-        <StatusButton service={this.props.service} />
         <SettingsButton service={this.props.service} />
       </div>
     );

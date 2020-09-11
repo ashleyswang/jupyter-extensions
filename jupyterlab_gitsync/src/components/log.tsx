@@ -89,7 +89,7 @@ export class SyncLog extends React.Component<Props, SyncLogState> {
         case 'sync':
           entries.push({
             date: new Date(),
-            value: 'Saved local changes. Syncing...'
+            value: 'Saved local changes. Syncing repository...'
           })
           break;
         case 'up-to-date':

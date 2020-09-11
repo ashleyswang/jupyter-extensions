@@ -34,16 +34,11 @@ export class StatusButton extends React.Component<Props, StatusButtonState> {
       <IconButton
         title={this.state.title}
         color='inherit'
-        onClick={() => this._onClick()}
+        disabled
       >
         {this.state.icon}
       </IconButton>
     );
-  }
-
-  private _onClick(): void {
-    // TO DO (ashleyswang): onClick bring sync log to the front
-    return;
   }
 
   private _setUpToDateState(): void {
@@ -72,7 +67,7 @@ export class StatusButton extends React.Component<Props, StatusButtonState> {
 
   private _setWarningState(): void {
     this.setState({
-      title: 'An Error has Occurred',
+      title: 'Error has Occurred',
       icon: <SyncProblemIcon fontSize='small'/>,
       status: 'warning',
     })

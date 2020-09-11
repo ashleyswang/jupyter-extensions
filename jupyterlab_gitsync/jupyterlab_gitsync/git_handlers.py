@@ -71,14 +71,11 @@ class SetupHandler(APIHandler):
   * returns executable path for sync
   """
 
-  def inside_git_repo(self, path):
-    return_code = subprocess.call(['git', 'rev-parse'], cwd=path)
-    return return_code == 0
-
-  def get_sync_path(self):
-    cwd = os.getcwd()
-    ex_path = 'jupyterlab_gitsync/jupyterlab_gitsync/git-sync-changes/git-sync-changes'
-    return os.path.join(cwd, ex_path)
+  def get_repo_path(self, path):
+    res = subprocess.run(['git', 'rev-parse', '--show-toplevel'], cwd=path, capture_output=True)
+    assert res.returncode == 0, "SetupError: " + res.stderr.decode("utf=8")
+    repo_path = res.stdout.decode("utf-8").strip()
+    return repo_path
 
   def get_current_branch(self, path):
     res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
@@ -89,14 +86,11 @@ class SetupHandler(APIHandler):
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
-    path = recv['path'] if recv['path'] else '.'
+    fpath = recv['fpath'] if recv['fpath'] else '.'
 
     try:
-      if self.inside_git_repo(path):
-        curr_branch, branches = self.get_current_branch(path)
-        ex_path = self.get_sync_path()
-        self.finish({'ex_path': ex_path, 'curr_branch': curr_branch, 'branches': branches})
-      else:
-        self.finish({'error': 'Given path is not a git repository.'})
+      self.get_repo_path(path):
+      curr_branch, branches = self.get_current_branch(path)
+      self.finish({'repo_path': repo_path, 'curr_branch': curr_branch, 'branches': branches})
     except Exception as e:
       self.finish({'error': str(e)})

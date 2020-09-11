@@ -1,4 +1,5 @@
 import { requestAPI } from './request_api';
+import { GitSyncService } from './service';
 import { ISignal, Signal } from '@lumino/signaling';
 
 /**
@@ -10,6 +11,7 @@ import { ISignal, Signal } from '@lumino/signaling';
 
 export class GitManager {
   // Member Fields
+  private _service: GitSyncService;
   private _path: string = '.';
   private _branch: string = undefined;
   private _collab: boolean = true;
@@ -18,8 +20,13 @@ export class GitManager {
 
   private _setupChange: Signal<this, string> = new Signal<this, string>(this);
 
-  constructor(){
+  constructor(service: GitSyncService){
+    this._service = service;
     this.setup('.');
+  }
+
+  get service(): GitSyncService {
+    return this._service;
   }
 
   get path(): string {
@@ -82,7 +89,6 @@ export class GitManager {
         method: 'POST',
         body: JSON.stringify({
           path: this._path,
-          ex_path: this._executablePath,
           collab: this.collab,
         }),
       };
@@ -100,23 +106,20 @@ export class GitManager {
     }
   }
 
-  async setup(path: string) {
+  async setup(fpath: string) {
     console.log('start setup');
     this._setupChange.emit('start');
-    this._clearConfig();
 
     const init: RequestInit = {
       method: 'POST',
-      body: JSON.stringify({ path: path }),
+      body: JSON.stringify({ fpath: fpath }),
     };
 
     const response = await requestAPI('v1/setup', init);
-    if (response.ex_path) {
-      this._path = path;
-      this._executablePath = response.ex_path;
+    if (response.repo_path) {
+      this._path = reaponse.repo_path;
       this._branches = response.branches;
       this._branch = response.curr_branch;
-
       this._setupChange.emit('finish');
     } else {
       this._setupChange.emit('finish');
@@ -125,8 +128,4 @@ export class GitManager {
     console.log(this.path, this.branch, this.branches, this.options);
   }
 
-  private _clearConfig() {
-    this._path = undefined;
-    this._executablePath = undefined;
-  }
 }

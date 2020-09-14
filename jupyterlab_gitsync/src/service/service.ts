@@ -28,7 +28,7 @@ export class GitSyncService {
 
   constructor(shell: ILabShell) {
     this._shell = shell;
-    this._git = new GitManager(this);
+    this._git = new GitManager();
     this._tracker = new FileTracker(this);
     this._addListeners();
   } 

@@ -62,8 +62,6 @@ export class File implements IFile {
 
   async save() {
     try {
-      console.log(this.path);
-      console.log(this.context);
       const text = this.doc.getValue();
       await this._saveFile(text);
       this.resolver.addVersion(text, 'base');

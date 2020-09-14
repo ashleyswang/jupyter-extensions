@@ -11,7 +11,6 @@ import { ISignal, Signal } from '@lumino/signaling';
 
 export class GitManager {
   // Member Fields
-  private _service: GitSyncService;
   private _path: string = undefined;
   private _branch: string = undefined;
   private _collab: boolean = true;
@@ -20,13 +19,9 @@ export class GitManager {
 
   private _setupChange: Signal<this, string> = new Signal<this, string>(this);
 
-  constructor(service: GitSyncService){
+  constructor(){
     this._service = service;
     this.setup('.');
-  }
-
-  get service(): GitSyncService {
-    return this._service;
   }
 
   get path(): string {

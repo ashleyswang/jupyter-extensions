@@ -28,6 +28,7 @@ export interface IFile {
   conflictState: ISignal<this, boolean>;
   dirtyState: ISignal<this, boolean>;
   resolver: IResolver;
+  repoPath: string;
 
   save(): Promise<void>;
   reload(): Promise<void>;
@@ -103,8 +104,8 @@ export class FileTracker {
     const current = this.shell.currentWidget;
     if (current instanceof DocumentWidget) {
       this._updateFiles(current);
+      this.service.setup(this.current);
     }
-    console.log(this.current);
   }
 
   private _updateFiles(widget: DocumentWidget) {

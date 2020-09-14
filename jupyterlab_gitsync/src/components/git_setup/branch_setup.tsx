@@ -3,13 +3,14 @@ import { classes } from 'typestyle';
 
 import { Props } from '../panel';
 
-import { 
+import {
+  setupHelperTextClass,
   setupItemClass,
   setupItemInnerClass,
 } from '../../style/setup';
 
 import FormControl from "@material-ui/core/FormControl";
-import FormHelperText from "@material-ui/core/FormHelperText";
+import FormHelperText from '@material-ui/core/FormHelperText';
 import Select from "@material-ui/core/Select";
 import MenuItem from "@material-ui/core/MenuItem";
 
@@ -40,7 +41,9 @@ export class GitBranchSetup extends React.Component<Props, GitBranchState> {
       <FormControl
         className={classes(setupItemClass)}
         disabled={this.state.disabled} 
+        variant='outlined'
       >
+        <FormHelperText className={setupHelperTextClass}>Branch</FormHelperText>
         <Select
           className={classes(setupItemInnerClass)}
           value={this.state.currBranch}
@@ -48,22 +51,31 @@ export class GitBranchSetup extends React.Component<Props, GitBranchState> {
         >
           {this._renderBranches()}
         </Select>
-        <FormHelperText>Branch</FormHelperText>
       </FormControl>
     );
   }
 
   private _renderBranches() {
-    return this.state.branches.map((branch) => {
-      return (
-        <MenuItem key={branch} value={branch}>{branch}</MenuItem>
-      );
-    });
+    if (this.state.branches){
+      return this.state.branches.map((branch) => {
+        return (
+          <MenuItem key={branch} value={branch}>{branch}</MenuItem>
+        );
+      });
+    } else {
+      this.setState({ 
+        currBranch: "Cannot Switch Branch",
+        disabled: true
+      });
+      return <MenuItem key="DEFAULT_VAL" value="Cannot Switch Branch"></MenuItem>;
+    }
   }
 
   private _onChange(event){
-    this.setState({ currBranch: event.target.value });
-    this.props.service.setup(null, event.target.value);
+    if (event.target.value) {
+      this.setState({ currBranch: event.target.value });
+      this.props.service.setup(null, event.target.value);
+    }
   }
 
   /* Only allow branch changes if we have successfully set up a git path */
@@ -77,7 +89,12 @@ export class GitBranchSetup extends React.Component<Props, GitBranchState> {
           currBranch: this.props.service.git.branch,
           branches: this.props.service.git.branches,
         });
-      } else if (status === 'change') this.setState({ currBranch: this.props.service.git.branch });
+      } else if (status === 'change') {
+        this.setState({ 
+          disabled: false,
+          currBranch: this.props.service.git.branch,
+        });
+      }
     });
   }
 

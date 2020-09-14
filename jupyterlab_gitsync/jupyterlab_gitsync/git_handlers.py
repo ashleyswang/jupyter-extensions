@@ -39,8 +39,11 @@ class SyncHandler(APIHandler):
   """
   def get_current_branch(self, path):
     res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
-    branches = [x.decode("utf-8") for x in res.stdout.split() if (x!=b'*')]
-    curr_index = res.stdout.split().index(b'*')
+    branches = [x.strip().decode("utf-8") for x in res.stdout.split(b'\n') if (x.strip())]
+    for i in range(len(branches)):
+      if (branches[i][0] == '*'):
+        curr_index=i
+        branches[i] = branches[i][2:]
     return branches[curr_index]
 
   def sync_repo(self, path, options):
@@ -50,8 +53,7 @@ class SyncHandler(APIHandler):
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
-    path = recv['path'] if recv['path'] else '.'
-    # ex_path = recv['ex_path'] if recv['ex_path'] else ['git', 'sync-changes']
+    path = recv['path']
     curr_branch = self.get_current_branch(path)
     options = ['origin', 'jp-shared/'+curr_branch] if recv['collab'] else [] 
 
@@ -79,17 +81,20 @@ class SetupHandler(APIHandler):
 
   def get_current_branch(self, path):
     res = subprocess.run(['git', 'branch'], cwd=path, capture_output=True)
-    branches = [x.decode("utf-8") for x in res.stdout.split() if (x!=b'*')]
-    curr_index = res.stdout.split().index(b'*')
+    branches = [x.strip().decode("utf-8") for x in res.stdout.split(b'\n') if (x.strip())]
+    for i in range(len(branches)):
+      if (branches[i][0] == '*'):
+        curr_index=i
+        branches[i] = branches[i][2:]
     return branches[curr_index], branches
 
   @gen.coroutine
   def post(self, *args, **kwargs):
     recv = self.get_json_body()
-    fpath = recv['fpath'] if recv['fpath'] else '.'
+    path = recv['path'] if recv['path'] else '.'
 
     try:
-      self.get_repo_path(path):
+      repo_path = self.get_repo_path(path)
       curr_branch, branches = self.get_current_branch(path)
       self.finish({'repo_path': repo_path, 'curr_branch': curr_branch, 'branches': branches})
     except Exception as e:

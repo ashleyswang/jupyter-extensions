@@ -31,6 +31,7 @@ export class File implements IFile {
     line: number;
     ch: number;
   };
+  repoPath: string = undefined;
 
   private _conflictState: Signal<this, boolean> = new Signal<this, boolean>(this);
   private _dirtyState: Signal<this, boolean> = new Signal<this, boolean>(this);
@@ -61,6 +62,8 @@ export class File implements IFile {
 
   async save() {
     try {
+      console.log(this.path);
+      console.log(this.context);
       const text = this.doc.getValue();
       await this._saveFile(text);
       this.resolver.addVersion(text, 'base');

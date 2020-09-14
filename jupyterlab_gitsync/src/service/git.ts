@@ -12,7 +12,7 @@ import { ISignal, Signal } from '@lumino/signaling';
 export class GitManager {
   // Member Fields
   private _service: GitSyncService;
-  private _path: string = '.';
+  private _path: string = undefined;
   private _branch: string = undefined;
   private _collab: boolean = true;
   private _executablePath: string = undefined;
@@ -106,18 +106,19 @@ export class GitManager {
     }
   }
 
-  async setup(fpath: string) {
+  async setup(path: string) {
     console.log('start setup');
     this._setupChange.emit('start');
+    this._path = undefined;
 
     const init: RequestInit = {
       method: 'POST',
-      body: JSON.stringify({ fpath: fpath }),
+      body: JSON.stringify({ path: path }),
     };
 
     const response = await requestAPI('v1/setup', init);
     if (response.repo_path) {
-      this._path = reaponse.repo_path;
+      this._path = response.repo_path;
       this._branches = response.branches;
       this._branch = response.curr_branch;
       this._setupChange.emit('finish');

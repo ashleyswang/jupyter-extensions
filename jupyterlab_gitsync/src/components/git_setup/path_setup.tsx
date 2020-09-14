@@ -3,91 +3,64 @@ import { classes } from 'typestyle';
 
 import { Props } from '../panel';
 
-import { 
+import {
+  setupHelperTextClass,
   setupItemClass,
   setupItemInnerClass,
 } from '../../style/setup';
 
 import FormControl from "@material-ui/core/FormControl";
-import FormHelperText from "@material-ui/core/FormHelperText";
-import Input from '@material-ui/core/Input';
-import IconButton from '@material-ui/core/IconButton';
-import SendIcon from '@material-ui/icons/Send';
-import Grid from "@material-ui/core/Grid";
-
+import FormHelperText from '@material-ui/core/FormHelperText';
+import OutlinedInput from "@material-ui/core/OutlinedInput";
 
 interface GitPathState {
-  disabled: boolean;
   path: string;
-  value: string;
 }
 
 export class GitPathSetup extends React.Component<Props, GitPathState> {
   constructor(props){
     super(props);
     this.state = {
-      disabled: false,
-      path: '.',
-      value: '.',
+      path: this.props.service.git.path ? 
+        this._shortenPath(this.props.service.git.path) : 
+        'No Git Repository Found',
     }
   }
 
   componentDidMount() {
     this._addListeners();
-    this.props.service.setup(this.state.path);
   }
 
   render(): React.ReactElement {
     return(
-      <FormControl 
+      <FormControl
         className={classes(setupItemClass)}
-        disabled={this.state.disabled} 
+        disabled
+        variant='outlined'
       >
-        <Grid container className={classes(setupItemInnerClass)}>
-          <Grid item xs>
-            <Input 
-              value={this.state.value} 
-              onChange={(event) => this._onChange(event)} 
-              onKeyDown={(event) => this._onKeyDown(event)}
-              style={{width: "85%"}}
-            />
-          </Grid>
-          <Grid item>
-            <IconButton
-              onClick={() => this._onClick()}
-              style={{position: "absolute", right: "0px"}}
-              disabled={this.state.disabled}
-            >
-              <SendIcon fontSize='small'/>
-            </IconButton>
-          </Grid>
-        </Grid>
-      <FormHelperText>Repository </FormHelperText>
+        <FormHelperText className={setupHelperTextClass}>Repository</FormHelperText>
+        <OutlinedInput
+          className={classes(setupItemInnerClass)}
+          value={this.state.path}
+          style={{color: "var(--jp-ui-font-color0)"}}
+        />
       </FormControl>
     );
   }
 
-  private _onChange(event) {
-    this.setState({ value: event.target.value });
-  }
-
-  private _onKeyDown(event) {
-    if (event.keyCode === 13)
-      this._onClick();
-  }
-
-  private _onClick() {
-    this.setState({ path: this.state.value });
-    this.props.service.setup(this.state.value);
-    console.log(this.state.value);
-  }
-
-  /* Only allow path changes when the service is not running */
   private _addListeners() {
-    this.props.service.stateChange.connect((_, running) => {
-      if (running && !this.state.disabled) this.setState({ disabled: true });
-      else if (!running && this.state.disabled) this.setState({ disabled: false });
+    this.props.service.setupChange.connect((_, value) => {
+      if (value.status === 'success' && value.attrib === 'path')
+        this.setState({
+          path: this.props.service.git.path ? 
+            this._shortenPath(this.props.service.git.path) : 
+            'No Git Repository Found',
+        });
     });
+  }
+
+  private _shortenPath(path: string): string {
+    return path.substring(path.lastIndexOf('/')+1);
   }
 
 }

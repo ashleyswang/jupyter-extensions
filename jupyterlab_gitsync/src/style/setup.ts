@@ -8,13 +8,18 @@ export const setupClass = style({
 
 export const setupItemClass = style({
   display: 'block !important',
-  padding: '10px !important',
+  height: '40%',
+  paddingBottom: '5px !important',
+  paddingLeft: '10px !important',
+  paddingRight: '10px !important',
+  paddingTop: '5px !important',
 });
 
 export const setupItemInnerClass = style({
-  width: '100%'
+  width: '100%',
+  height: '70%',
 });
 
-export const fileBrowserValue = style({
-  display: 'none !important',
+export const setupHelperTextClass = style({
+  margin: '0 !important',
 });

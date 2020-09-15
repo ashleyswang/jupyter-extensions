@@ -14,12 +14,6 @@ async function activate(app: JupyterFrontEnd, shell: ILabShell) {
   const widget = new GitSyncWidget(service);
   app.shell.add(widget, 'left', { rank: 100 });
   console.log('git widget activated');
-
-  const fs = new ContentsManager();
-  const options = {
-    type: 'directory' as Contents.ContentType,
-    content: true,
-  };
 }
 /**
  * The JupyterLab plugin.

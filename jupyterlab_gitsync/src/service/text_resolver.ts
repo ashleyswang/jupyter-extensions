@@ -90,6 +90,7 @@ export class TextResolver implements IResolver {
   mergeVersions(): string {
     if (this.versions.local === this.versions.remote) {
       this.addVersion(this.versions.local, 'base');
+      this._conflict = false;
       return undefined;
     }
 
@@ -101,6 +102,7 @@ export class TextResolver implements IResolver {
     );
 
     if (result.conflict) {
+      console.log(this.file.path, this.versions);
       result.result = result.result.map(value => {
         switch (value) {
           case '\n<<<<<<<<<\n':

@@ -192,8 +192,10 @@ export class GitSyncService {
 
   private _conflictListener(sender: FileTracker, conflict: boolean) {
     this._updateBlocked(conflict);
-    if (this.running) this._runningChange.emit(!conflict);
-    console.log('conflict update from service');
+    if (this.running) {
+      this._run();
+      this._runningChange.emit(!conflict);
+    }
   }
 
   private _dirtyStateListener(sender: FileTracker, dirty: boolean) {

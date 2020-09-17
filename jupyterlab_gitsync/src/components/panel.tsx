@@ -7,8 +7,6 @@ import { Toolbar } from './toolbar';
 import { GitSetup } from './setup';
 import { LogDisplay } from './log';
 
-import Button from '@material-ui/core/Button';
-
 import { panel } from '../style/panel';
 
 export interface Props {
@@ -23,9 +21,6 @@ export class Panel extends React.Component<Props> {
   render() {
     return (
       <div className={panel}>
-        <Button onClick={() => this.props.service.tracker.reloadAll()}>
-          reload all
-        </Button>
         <Toolbar service={this.props.service} />
         <GitSetup service={this.props.service} />
         <LogDisplay service={this.props.service} />

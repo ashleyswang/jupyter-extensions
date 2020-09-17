@@ -35,6 +35,7 @@ export class GitSyncService {
 
   constructor(shell: ILabShell, manager: IDocumentManager) {
     this._shell = shell;
+    this._manager = manager;
     this._git = new GitManager();
     this._tracker = new FileTracker(this);
     this._addListeners();
@@ -104,26 +105,35 @@ export class GitSyncService {
   async setup(file?: IFile, branch?: string) {
     try {
       if (file && (!file.repoPath || file.repoPath !== this.git.path)) {
+        const oldRepoPath = this.git.path;
         const path = file.repoPath
           ? file.repoPath
           : file.path.substring(0, file.path.lastIndexOf('/'));
         await this.git.setup(path);
         if (!file.repoPath) file.repoPath = this.git.path;
-        const repoPath = this.git.path.substring(
-          this.git.path.lastIndexOf('/') + 1
-        );
-        this._setupChange.emit({
-          status: 'success',
-          attrib: 'path',
-          value: `Changed repository path to "${repoPath}". Current checked-out branch is "${this.git.branch}".`,
-        });
+        if (oldRepoPath !== this.git.path) {
+          const repoPath = this.git.path.substring(
+            this.git.path.lastIndexOf('/') + 1
+          );
+          this._setupChange.emit({
+            status: 'success',
+            attrib: 'path',
+            value: [
+              'Changed repository path to ',
+              repoPath,
+              '. Current checked-out branch is ',
+              this.git.branch,
+              '.',
+            ],
+          });
+        }
       }
       if (branch && branch !== this.git.branch) {
         await this.git.changeBranch(branch);
         this._setupChange.emit({
           status: 'success',
           attrib: 'branch',
-          value: `Checked-out to branch "${this.git.branch}".`,
+          value: ['Checked-out to branch ', this.git.branch, '.'],
         });
       }
     } catch (error) {

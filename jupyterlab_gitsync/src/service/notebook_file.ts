@@ -83,6 +83,11 @@ export class NotebookFile implements IFile {
     this.content.model.fromJSON(json);
   }
 
+  async reveal(): Promise<void> {
+    this.widget = this.manager.openOrReveal(this.path) as NotebookPanel;
+    await this.context.ready;
+  }
+
   async markResolved(): Promise<void> {
     await this.save();
     this._mergeState.emit('resolved');

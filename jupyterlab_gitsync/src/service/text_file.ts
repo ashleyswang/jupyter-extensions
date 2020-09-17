@@ -85,6 +85,11 @@ export class TextFile implements IFile {
     this.editor.setValue(text);
   }
 
+  async reveal(): Promise<void> {
+    this.widget = this.manager.openOrReveal(this.path) as DocumentWidget;
+    await this.context.ready;
+  }
+
   async markResolved(): Promise<void> {
     await this.save();
     this._mergeState.emit('resolved');

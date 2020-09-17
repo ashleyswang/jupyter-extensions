@@ -33,6 +33,7 @@ export interface IFile {
 
   save(): Promise<void>;
   viewDiff(): Promise<void>;
+  reveal(): Promise<void>;
   markResolved(): Promise<void>;
   reload(): Promise<IFile>;
 }

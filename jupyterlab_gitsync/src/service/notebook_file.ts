@@ -68,7 +68,7 @@ export class NotebookFile implements IFile {
 
   async save(): Promise<void> {
     try {
-      await this.content.save();
+      await this.context.save();
       const content = (this.content.model as NotebookModel).toJSON();
       this.resolver.addVersion(content, 'base');
     } catch (error) {

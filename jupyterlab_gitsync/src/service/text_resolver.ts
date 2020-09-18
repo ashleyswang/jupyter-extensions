@@ -102,7 +102,6 @@ export class TextResolver implements IResolver {
     );
 
     if (result.conflict) {
-      console.log(this.file.path, this.versions);
       result.result = result.result.map(value => {
         switch (value) {
           case '\n<<<<<<<<<\n':

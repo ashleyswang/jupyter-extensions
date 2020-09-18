@@ -136,7 +136,6 @@ export class ConflictList extends React.Component<Props, ConflictListState> {
   }
 
   render(): React.ReactElement {
-    console.log('rendering conflict list');
     return (
       <List
         id="FileConflictsList"

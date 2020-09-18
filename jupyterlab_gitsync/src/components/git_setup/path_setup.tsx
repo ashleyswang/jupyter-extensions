@@ -63,7 +63,9 @@ export class GitPathSetup extends React.Component<Props, GitPathState> {
   private _setPath() {
     setTimeout(() => {
       this.setState({
-        path: this._shortenPath(this.props.service.git.path),
+        path: this.props.service.git.path
+          ? this._shortenPath(this.props.service.git.path)
+          : 'No Git Repository Found',
       });
     }, 2000);
   }
